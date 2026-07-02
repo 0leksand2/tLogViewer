@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="tLogViewer.Reader/tLogViewer.Reader.csproj" Id="288beadb-b610-4f37-9741-b97b5a89684b" />
+  <Project Path="TLogViewer.Web/TLogViewer.Web.csproj" />
+</Solution>
