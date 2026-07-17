@@ -1,6 +1,9 @@
 ﻿using tLogViewer.Reader.Services;
 
-foreach (var record in LogReader.ReadTLog("D:\\projects\\tLogViewer\\data\\2026-06-04 18-42-04.tlog"))
+var logProcessor = new LogProcessor();
+var messages = logProcessor.ProcessLogFile("D:\\projects\\tLogViewer\\data\\2026-06-04 18-42-04.tlog");
+
+foreach (var message in messages)
 {
-    Console.WriteLine($"Trail={record.Trail} Packet={record.MavPacket.Seq}, Type={record.MavPacket.MsgId}");
+    message.Print();
 }
