@@ -54,3 +54,9 @@ data/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+.vscode/
+node_modules/
+dist/
+TLogViewer/ClientApp/TLogViewer.Web/wwwroot/
+TLogViewer/TLogViewer.Web/wwwroot
