@@ -2,6 +2,7 @@
 using tLogViewer.Core.Enums.Heartbeat;
 using tLogViewer.Core.Models;
 using tLogViewer.Core.Models.Messages;
+using tLogViewer.Core.Models.Messages.RcChannelsMessage;
 
 namespace tLogViewer.Reader.Services
 {
@@ -20,8 +21,8 @@ namespace tLogViewer.Reader.Services
                 //    return new GpsRawIntMessage().Parse(packet);
                 case MavMessageTypeId.ATTITUDE:
                     return new Attitude(packet);
-                //case MavMessageTypeId.RC_CHANNELS_RAW:
-                //    return new RcChannelsRawMessage().Parse(packet);
+                case MavMessageTypeId.RC_CHANNELS:
+                    return RcChannelsFactory.ParseRcChannelsPacket(packet);
                 //case MavMessageTypeId.VFR_HUD:
                 //    return new VfrHudMessage().Parse(packet);
                 case MavMessageTypeId.GLOBAL_POSITION_INT:
