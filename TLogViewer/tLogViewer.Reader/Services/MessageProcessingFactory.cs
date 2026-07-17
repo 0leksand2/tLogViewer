@@ -23,8 +23,8 @@ namespace tLogViewer.Reader.Services
                     return new Attitude(packet);
                 case MavMessageTypeId.RC_CHANNELS:
                     return RcChannelsFactory.ParseRcChannelsPacket(packet);
-                //case MavMessageTypeId.VFR_HUD:
-                //    return new VfrHudMessage().Parse(packet);
+                case MavMessageTypeId.VFR_HUD:
+                    return new VfrHud(packet);
                 case MavMessageTypeId.GLOBAL_POSITION_INT:
                     return new GlobalPositionInt(packet);
                 default:

@@ -8,6 +8,7 @@
         ATTITUDE = 30,
         GLOBAL_POSITION_INT = 33,
         RC_CHANNELS = 65,
+        VFR_HUD = 74,
         BATTERY_STATUS = 147
     }
 }
