@@ -1,6 +1,6 @@
-﻿using tLogViewer.Reader.Enums.Heartbeat;
+﻿using tLogViewer.Core.Enums.Heartbeat;
 
-namespace tLogViewer.Reader.Models.Messages
+namespace tLogViewer.Core.Models.Messages
 {
     public class Heartbeat : MavLinkMessage
     {

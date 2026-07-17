@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace tLogViewer.Reader.Models
+﻿namespace tLogViewer.Core.Models
 {
     public class TLogRecord
     {

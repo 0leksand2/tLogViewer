@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using tLogViewer.Reader.Enums;
-using tLogViewer.Reader.Enums.Heartbeat;
-using tLogViewer.Reader.Models;
-using tLogViewer.Reader.Models.Messages;
+﻿using tLogViewer.Core.Enums;
+using tLogViewer.Core.Enums.Heartbeat;
+using tLogViewer.Core.Models;
+using tLogViewer.Core.Models.Messages;
 
 namespace tLogViewer.Reader.Services
 {

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace tLogViewer.Reader.Models.Messages
+﻿namespace tLogViewer.Core.Models.Messages
 {
     public class Attitude : MavLinkMessage
     {

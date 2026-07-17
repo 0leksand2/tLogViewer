@@ -1,8 +1,8 @@
-﻿namespace tLogViewer.Reader.Models
+﻿namespace tLogViewer.Core.Models
 {
     public abstract class MavLinkMessage
     {
-        
+        //handling MAVLINK 2 truncation of trailing zeros
         public MavLinkMessage(MavPacket packet)
         {
             Packet = packet;

@@ -1,4 +1,4 @@
-﻿namespace tLogViewer.Reader.Enums.Heartbeat
+﻿namespace tLogViewer.Core.Enums.Heartbeat
 {
     [Flags]
     public enum MavModeFlag : byte

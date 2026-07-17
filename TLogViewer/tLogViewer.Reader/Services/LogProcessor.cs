@@ -1,4 +1,4 @@
-﻿using tLogViewer.Reader.Models;
+﻿using tLogViewer.Core.Models;
 
 namespace tLogViewer.Reader.Services
 {

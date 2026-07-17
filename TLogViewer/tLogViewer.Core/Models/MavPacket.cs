@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using tLogViewer.Reader.Enums;
+﻿using tLogViewer.Core.Enums;
 
-namespace tLogViewer.Reader.Models
+namespace tLogViewer.Core.Models
 {
     public class MavPacket
     {

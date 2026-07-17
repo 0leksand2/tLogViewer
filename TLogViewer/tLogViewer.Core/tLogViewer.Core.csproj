@@ -6,12 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Asv.Mavlink" Version="4.2.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\tLogViewer.Core\tLogViewer.Core.csproj" />
-  </ItemGroup>
-
 </Project>

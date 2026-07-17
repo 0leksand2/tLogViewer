@@ -1,4 +1,4 @@
-﻿namespace tLogViewer.Reader.Enums.Heartbeat
+﻿namespace tLogViewer.Core.Enums.Heartbeat
 {
     public enum SystemStatus
     {
