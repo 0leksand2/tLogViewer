@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using tLogViewer.Reader.Enums;
+using tLogViewer.Reader.Enums.Heartbeat;
 using tLogViewer.Reader.Models;
 using tLogViewer.Reader.Models.Messages;
 
@@ -14,13 +15,14 @@ namespace tLogViewer.Reader.Services
             switch (packet.MsgId)
             {
                 case MavMessageTypeId.HEARTBEAT:
-                    return new Heartbeat().Parse(packet);
+                    var message = new Heartbeat(packet);
+                    return message.Type != AircraftType.Unknown ? message : null;
                 //case MavMessageTypeId.SYS_STATUS:
                 //    return new SysStatusMessage().Parse(packet);
                 //case MavMessageTypeId.GPS_RAW_INT:
                 //    return new GpsRawIntMessage().Parse(packet);
-                //case MavMessageTypeId.ATTITUDE:
-                //    return new AttitudeMessage().Parse(packet);
+                case MavMessageTypeId.ATTITUDE:
+                    return new Attitude(packet);
                 //case MavMessageTypeId.RC_CHANNELS_RAW:
                 //    return new RcChannelsRawMessage().Parse(packet);
                 //case MavMessageTypeId.VFR_HUD:

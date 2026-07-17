@@ -19,30 +19,15 @@ namespace tLogViewer.Reader.Models.Messages
 
         public override int ExpectedLength => 9;
 
-        public Heartbeat() : base()
+
+        public Heartbeat(MavPacket packet) : base(packet)
         {
-        }
-
-        public override MavLinkMessage Parse(MavPacket packet)
-        {
-            byte[] p = new byte[ExpectedLength];
-
-            packet.Payload.CopyTo(p, 0);
-            var type = Enum.IsDefined(typeof(AircraftType), (int)p[4]) ? (AircraftType)p[4] : AircraftType.Unknown;
-
-            //do not handle unkown for now
-            if (type == AircraftType.Unknown)
-                return null;
-            return new Heartbeat()
-            {
-                CustomMode = BitConverter.ToUInt32(p, 0),
-                Type = type,
-                Autopilot = Enum.IsDefined(typeof(Autopilot), (int)p[5]) ? (Autopilot)p[5] : Autopilot.Generic,
-                BaseMode = (MavModeFlag)p[6],
-                SystemStatus = (SystemStatus)p[7],
-                MavlinkVersion = p[8],
-                Packet = packet
-            };
+            CustomMode = BitConverter.ToUInt32(FullPacket, 0);
+            Type = Enum.IsDefined(typeof(AircraftType), (int)FullPacket[4]) ? (AircraftType)FullPacket[4] : AircraftType.Unknown;
+            Autopilot = Enum.IsDefined(typeof(Autopilot), (int)FullPacket[5]) ? (Autopilot)FullPacket[5] : Autopilot.Generic;
+            BaseMode = (MavModeFlag)FullPacket[6];
+            SystemStatus = (SystemStatus)FullPacket[7];
+            MavlinkVersion = FullPacket[8];
         }
 
         public override void Print()
