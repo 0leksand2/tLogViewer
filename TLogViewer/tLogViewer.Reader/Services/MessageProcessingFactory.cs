@@ -14,8 +14,8 @@ namespace tLogViewer.Reader.Services
                 case MavMessageTypeId.HEARTBEAT:
                     var message = new Heartbeat(packet);
                     return message.Type != AircraftType.Unknown ? message : null;
-                //case MavMessageTypeId.SYS_STATUS:
-                //    return new SysStatusMessage().Parse(packet);
+                case MavMessageTypeId.SYS_STATUS:
+                    return new SysStatus(packet);
                 //case MavMessageTypeId.GPS_RAW_INT:
                 //    return new GpsRawIntMessage().Parse(packet);
                 case MavMessageTypeId.ATTITUDE:
