@@ -24,8 +24,8 @@ namespace tLogViewer.Reader.Services
                 //    return new RcChannelsRawMessage().Parse(packet);
                 //case MavMessageTypeId.VFR_HUD:
                 //    return new VfrHudMessage().Parse(packet);
-                //case MavMessageTypeId.GLOBAL_POSITION_INT:
-                //    return new GlobalPositionIntMessage().Parse(packet);
+                case MavMessageTypeId.GLOBAL_POSITION_INT:
+                    return new GlobalPositionInt(packet);
                 default:
                     //throw new NotImplementedException($"Parsing for message type {packet.MsgId} is not implemented.");
                     return null;
