@@ -1,0 +1,45 @@
+<button
+  type="button"
+  class="menu-toggle"
+  (click)="toggle()"
+  [attr.aria-expanded]="open()"
+  aria-controls="app-side-panel"
+  [attr.aria-label]="open() ? 'Close menu' : 'Open menu'"
+>
+  <span class="menu-toggle__bar" aria-hidden="true"></span>
+  <span class="menu-toggle__bar" aria-hidden="true"></span>
+  <span class="menu-toggle__bar" aria-hidden="true"></span>
+</button>
+
+<aside
+  id="app-side-panel"
+  class="side-panel"
+  [class.side-panel--open]="open()"
+  [attr.aria-hidden]="!open()"
+>
+  <header class="side-panel__header">
+    <h1 class="side-panel__title">TLog Viewer</h1>
+    <button
+      type="button"
+      class="side-panel__close"
+      (click)="close()"
+      aria-label="Close menu"
+    >
+      &times;
+    </button>
+  </header>
+
+  <div class="side-panel__body">
+    <p class="side-panel__hint">Filters, tracks, and log details will go here.</p>
+    <ng-content />
+  </div>
+</aside>
+
+@if (open()) {
+  <button
+    type="button"
+    class="side-panel__backdrop"
+    (click)="close()"
+    aria-label="Dismiss menu"
+  ></button>
+}

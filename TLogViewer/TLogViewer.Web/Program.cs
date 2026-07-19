@@ -1,8 +1,20 @@
+using Microsoft.AspNetCore.Http.Features;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
+builder.Services.AddSingleton<tLogViewer.Services.ILogAnalyticsService, tLogViewer.Services.LogAnalyticsService>();
+builder.Services.AddSingleton<tLogViewer.Services.ITlogProcessingService, tLogViewer.Services.TlogProcessingService>();
+builder.Services.AddSingleton<tLogViewer.Services.ITlogSessionStore, tLogViewer.Services.TlogSessionStore>();
+builder.Services.AddHostedService<TLogViewer.Web.TlogSessionCleanupService>();
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 512_000_000;
+});
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 512_000_000;
+});
 
 builder.Services.AddCors(options =>
 {
@@ -15,10 +27,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
-app.UseDefaultFiles();   
-app.UseStaticFiles();    
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseCors("AllowAngularDev");
@@ -29,6 +40,13 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Unknown /api routes must return JSON 404 (do not fall through to the SPA).
+app.Map("/api/{**slug}", (HttpContext context) =>
+    Results.Json(
+        new { message = $"No API endpoint matches '{context.Request.Path}'." },
+        statusCode: StatusCodes.Status404NotFound));
+
 app.MapFallbackToFile("index.html");
 
 app.Run();

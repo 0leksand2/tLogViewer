@@ -1,0 +1,124 @@
+:host {
+  --btn-bg: #fff;
+  --btn-border: #e2e5eb;
+  --btn-text: #1a1d24;
+  --btn-muted: #5c6570;
+  --btn-shadow: 0 1px 4px rgb(0 0 0 / 18%);
+  --accent: #1f6feb;
+  --accent-text: #fff;
+
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1002;
+  pointer-events: auto;
+}
+
+.tlog-load {
+  position: relative;
+}
+
+.tlog-load__toggle {
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--btn-border);
+  border-radius: 6px;
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
+  color: var(--btn-text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #f0f2f5;
+  }
+}
+
+.tlog-load__popup {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  width: min(260px, calc(100vw - 1.5rem));
+  padding: 0.75rem;
+  border: 1px solid var(--btn-border);
+  border-radius: 8px;
+  background: var(--btn-bg);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tlog-load__title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--btn-muted);
+}
+
+.tlog-load__action {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--btn-border);
+  border-radius: 6px;
+  background: #f7f8fa;
+  color: var(--btn-text);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #eef1f5;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: default;
+  }
+
+  &--primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
+    font-weight: 600;
+    text-align: center;
+
+    &:hover:not(:disabled) {
+      background: #1a5fd0;
+    }
+  }
+}
+
+.tlog-load__file {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--btn-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tlog-load__status {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--btn-muted);
+
+  &--ok {
+    color: #0f7b3a;
+  }
+
+  &--error {
+    color: #b42318;
+  }
+}
+
+.tlog-load__input {
+  display: none;
+}

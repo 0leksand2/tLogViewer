@@ -8,7 +8,8 @@
             Packet = packet;
             FullPacket = new byte[ExpectedLength];
 
-            packet.Payload.CopyTo(FullPacket, 0);
+            var copyLength = Math.Min(packet.Payload.Length, ExpectedLength);
+            Buffer.BlockCopy(packet.Payload, 0, FullPacket, 0, copyLength);
         }
 
         public abstract int ExpectedLength { get; }

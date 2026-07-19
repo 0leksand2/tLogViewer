@@ -1,0 +1,44 @@
+<div class="tlog-load">
+  <button
+    type="button"
+    class="tlog-load__toggle"
+    (click)="toggleMenu()"
+    [attr.aria-expanded]="menuOpen()"
+    aria-haspopup="menu"
+    aria-controls="tlog-load-popup"
+    [attr.aria-label]="menuOpen() ? 'Close load menu' : 'Open load menu'"
+  >
+    Load
+  </button>
+
+  @if (menuOpen()) {
+    <div id="tlog-load-popup" class="tlog-load__popup" role="menu" aria-label="Load tlog">
+      <p class="tlog-load__title">TLog file</p>
+
+      <button type="button" class="tlog-load__action" role="menuitem" (click)="openFilePicker()">
+        Choose .tlog…
+      </button>
+
+      @if (selectedFile(); as file) {
+        <p class="tlog-load__file" [title]="file.name">{{ file.name }}</p>
+        <button
+          type="button"
+          class="tlog-load__action tlog-load__action--primary"
+          role="menuitem"
+          (click)="uploadSelected()"
+          [disabled]="uploading()"
+        >
+          {{ uploading() ? 'Uploading…' : 'Upload to server' }}
+        </button>
+      }
+    </div>
+  }
+
+  <input
+    #fileInput
+    type="file"
+    class="tlog-load__input"
+    accept=".tlog,application/octet-stream"
+    (change)="onFileSelected($event)"
+  />
+</div>

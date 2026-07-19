@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\tLogViewer.Core\tLogViewer.Core.csproj" />
+    <ProjectReference Include="..\tLogViewer.Reader\tLogViewer.Reader.csproj" />
+    <ProjectReference Include="..\tLogViewer.DTO\tLogViewer.DTO.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
