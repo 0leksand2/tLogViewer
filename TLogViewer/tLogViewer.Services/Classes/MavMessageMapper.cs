@@ -11,7 +11,7 @@ public static class MavMessageMapper
 {
     public static MavMessageDto ToDto(MavLinkMessage message, ulong timeUs)
     {
-        var messageId = message.Packet.MsgId.ToString();
+        var messageId = ((int)message.Packet.MsgId).ToString();
         var timeUtc = TlogTime.ToUtcIso(timeUs);
 
         return message switch

@@ -62,13 +62,19 @@ export class MissionPlannerPropertiesComponent extends ModalContentBase<MissionP
   }
 
   override getModalValue(): MissionPlannerProperty[] {
-    return this.selectedOrder().map((key, order) => {
+    return this.selectedOrder().flatMap((key, order) => {
       const catalog = MISSION_PLANNER_PROPERTIES.find((property) => property.key === key);
-      return {
-        key,
-        label: catalog?.label,
-        order,
-      };
+      if (!catalog) {
+        return [];
+      }
+      return [
+        {
+          key,
+          label: catalog.label,
+          propertyValue: catalog.propertyValue,
+          order,
+        },
+      ];
     });
   }
 

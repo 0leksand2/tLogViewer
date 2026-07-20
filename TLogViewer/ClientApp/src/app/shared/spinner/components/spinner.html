@@ -6,12 +6,16 @@
     aria-busy="true"
     [attr.aria-label]="message()"
   >
-    <div class="spinner__stage" aria-hidden="true">
+    <div
+      class="spinner__stage"
+      aria-hidden="true"
+      [style.--spinner-icon-size.px]="iconSizePx()"
+    >
       <img
         class="spinner__icon"
-        src="assets/icons/fighter-jet.png"
-        width="128"
-        height="128"
+        [src]="iconSrc()"
+        [width]="iconSizePx()"
+        [height]="iconSizePx()"
         alt=""
       />
     </div>

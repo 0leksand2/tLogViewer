@@ -1,6 +1,7 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MissionPlannerProperty } from '../../../mission-planner-properties/models/mission-planner-properties.const';
+import { CurrentValue } from '../../../core/services/current.value';
 
 export interface TelemetryTile {
   key: string;
@@ -17,19 +18,20 @@ export interface TelemetryTile {
   styleUrl: './side-menu-data-tab.scss',
 })
 export class SideMenuDataTabComponent {
+  private readonly currentValue = inject(CurrentValue);
+
   readonly properties = input<readonly MissionPlannerProperty[]>([]);
-  readonly values = input<ReadonlyMap<string, string | number | null | undefined>>(new Map());
   readonly openProperties = output<void>();
   readonly propertiesReordered = output<MissionPlannerProperty[]>();
 
   protected readonly tiles = computed<TelemetryTile[]>(() => {
-    const values = this.values();
+    const values = this.currentValue.values();
     return [...this.properties()]
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       .map((property) => ({
         key: property.key,
         name: property.label ?? property.key,
-        value: this.formatValue(values.get(property.key)),
+        value: this.formatValue(values[property.propertyValue]),
         property,
       }));
   });
@@ -69,13 +71,19 @@ export class SideMenuDataTabComponent {
     this.propertiesReordered.emit(withOrder);
   }
 
-  private formatValue(value: string | number | null | undefined): string {
+  private formatValue(value: unknown): string {
     if (value === null || value === undefined || value === '') {
       return '0.0';
     }
     if (typeof value === 'number') {
       return Number.isFinite(value) ? value.toFixed(1) : '0.0';
     }
-    return value;
+    if (typeof value === 'boolean') {
+      return value ? 'true' : 'false';
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    return String(value);
   }
 }

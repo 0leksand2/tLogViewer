@@ -12,12 +12,9 @@ import { DropdownModule } from '../../shared/dropdown/dropdown.module';
 import { DropdownOption } from '../../shared/dropdown/models/dropdown-option.model';
 import { snapProgressPercent } from '../utils/playback-timeline';
 
-/** Playback rate as percent of base step rate (100 = 0.1% per step). */
+/** Playback rate as percent of realtime (100 = 1 ms wall-clock → 1 ms of log). */
 const PLAYBACK_SPEEDS = [1, 10, 50, 75, 100, 125, 150, 200, 500, 1000] as const;
 const FORWARD_PERCENT = 5;
-/** Progress advance per move at 100% playback speed. */
-const STEP_PERCENT_AT_100 = 0.1;
-const STEPS_AT_100 = 100 / STEP_PERCENT_AT_100;
 
 @Component({
   selector: 'app-flight-player',
@@ -33,10 +30,10 @@ export class FlightPlayerComponent implements OnDestroy {
   readonly playbackPoints = input<number[]>([]);
   /** Optional wall-clock span for pacing; falls back to point time span. */
   readonly durationSeconds = input(0);
-  /** Progress through the flight, 0–100 in 0.1% steps. */
+  /** Progress through the flight, 0–100. */
   readonly progressPercent = model(0);
   readonly playing = model(false);
-  /** Playback rate (100 = one 0.1% move per step interval). */
+  /** Playback rate (100 = realtime along the log timeline). */
   readonly playbackSpeed = model<number>(100);
 
   protected readonly forwardPercent = FORWARD_PERCENT;
@@ -49,7 +46,6 @@ export class FlightPlayerComponent implements OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private rafId: number | null = null;
   private lastFrameMs: number | null = null;
-  private stepAccumulator = 0;
 
   protected readonly hasPlayback = computed(() => this.playbackPoints().length > 0);
 
@@ -58,18 +54,17 @@ export class FlightPlayerComponent implements OnDestroy {
 
   protected readonly speedValue = computed(() => String(this.playbackSpeed()));
 
-  /** Seconds between 0.1% moves when speed is 100%. */
-  private readonly stepIntervalSeconds = computed(() => {
+  /** Log timeline length in milliseconds (first→last message key, or duration). */
+  private readonly timelineSpanMs = computed(() => {
     const points = this.playbackPoints();
-    const durationInput = this.durationSeconds();
-    if (durationInput > 0) {
-      return durationInput / STEPS_AT_100;
+    if (points.length >= 2) {
+      return Math.max(1, points[points.length - 1]! - points[0]!);
     }
-    if (points.length < 2) {
-      return 0.01;
+    const duration = this.durationSeconds();
+    if (duration > 0) {
+      return Math.max(1, Math.round(duration * 1000));
     }
-    const spanSeconds = (points[points.length - 1]! - points[0]!) / 1000;
-    return Math.max(spanSeconds, 0.001) / STEPS_AT_100;
+    return 1;
   });
 
   constructor() {
@@ -78,12 +73,6 @@ export class FlightPlayerComponent implements OnDestroy {
         this.stopPlayback();
         this.playing.set(false);
         this.progressPercent.set(0);
-        return;
-      }
-
-      const snapped = snapProgressPercent(this.progressPercent());
-      if (snapped !== this.progressPercent()) {
-        this.progressPercent.set(snapped);
       }
     });
 
@@ -126,6 +115,7 @@ export class FlightPlayerComponent implements OnDestroy {
     }
   }
 
+  /** Slider scrubbing snaps to 0.1%. */
   protected onSliderInput(event: Event): void {
     if (!this.hasPlayback()) {
       return;
@@ -157,7 +147,6 @@ export class FlightPlayerComponent implements OnDestroy {
     }
 
     this.lastFrameMs = null;
-    this.stepAccumulator = 0;
 
     const tick = (now: number) => {
       if (!this.playing()) {
@@ -170,39 +159,24 @@ export class FlightPlayerComponent implements OnDestroy {
         this.lastFrameMs = now;
       }
 
-      const deltaSeconds = (now - this.lastFrameMs) / 1000;
+      const deltaWallMs = now - this.lastFrameMs;
       this.lastFrameMs = now;
 
-      // At 100% speed: one 0.1% move every stepIntervalSeconds.
+      // At 100% speed: 1 ms of wall time advances 1 ms of log timeline.
       const speedFactor = this.playbackSpeed() / 100;
-      this.stepAccumulator += deltaSeconds * speedFactor;
+      const deltaFlightMs = deltaWallMs * speedFactor;
+      const deltaPercent = (deltaFlightMs / this.timelineSpanMs()) * 100;
+      const next = this.progressPercent() + deltaPercent;
 
-      const interval = this.stepIntervalSeconds();
-      if (interval <= 0) {
+      if (next >= 100) {
+        this.progressPercent.set(100);
         this.playing.set(false);
         this.rafId = null;
         this.lastFrameMs = null;
         return;
       }
 
-      let progress = this.progressPercent();
-      while (this.stepAccumulator >= interval) {
-        this.stepAccumulator -= interval;
-        progress = snapProgressPercent(progress + STEP_PERCENT_AT_100);
-        if (progress >= 100) {
-          this.progressPercent.set(100);
-          this.playing.set(false);
-          this.rafId = null;
-          this.lastFrameMs = null;
-          this.stepAccumulator = 0;
-          return;
-        }
-      }
-
-      if (progress !== this.progressPercent()) {
-        this.progressPercent.set(progress);
-      }
-
+      this.progressPercent.set(next);
       this.rafId = requestAnimationFrame(tick);
     };
 
@@ -215,7 +189,6 @@ export class FlightPlayerComponent implements OnDestroy {
       this.rafId = null;
     }
     this.lastFrameMs = null;
-    this.stepAccumulator = 0;
   }
 
   private formatPercent(value: number): string {

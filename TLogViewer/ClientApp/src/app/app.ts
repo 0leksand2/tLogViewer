@@ -1,6 +1,6 @@
 import { Component, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, switchMap, of, tap, catchError, EMPTY } from 'rxjs';
+import { Subject, switchMap, of, catchError, EMPTY } from 'rxjs';
 import { MapComponent } from './map/components/map';
 import { MapModule } from './map/map.module';
 import { SideMenuModule } from './side-menu/side-menu.module';
@@ -23,7 +23,11 @@ import {
 } from './mission-planner-properties/models/mission-planner-properties.const';
 import { SelectedTelemetryPropertiesStorage } from './mission-planner-properties/services/selected-telemetry-properties-storage.service';
 import { FlightPlayerModule } from './flight-player/flight-player.module';
-import { sortedPlaybackPoints } from './flight-player/utils/playback-timeline';
+import {
+  resolvePlaybackPoint,
+  sortedPlaybackPoints,
+} from './flight-player/utils/playback-timeline';
+import { CurrentValue } from './core/services/current.value';
 
 @Component({
   selector: 'app-root',
@@ -43,6 +47,7 @@ import { sortedPlaybackPoints } from './flight-player/utils/playback-timeline';
 export class App {
   private readonly selectedPropertiesStorage = inject(SelectedTelemetryPropertiesStorage);
   private readonly tlogService = inject(TlogService);
+  private readonly currentValue = inject(CurrentValue);
   private readonly flightSelection$ = new Subject<{ sessionId: string; flightId: string } | null>();
 
   protected readonly menuOpen = signal(true);
@@ -97,6 +102,17 @@ export class App {
     });
 
     effect(() => {
+      const flight = this.loadedFlight();
+      const millisecond = resolvePlaybackPoint(
+        this.playbackPoints(),
+        this.flightProgressPercent(),
+      );
+      const values =
+        millisecond !== null && flight ? (flight.messages[String(millisecond)] ?? {}) : {};
+      this.currentValue.set(millisecond, values, flight?.id ?? null);
+    });
+
+    effect(() => {
       const sessionId = this.sessionId();
       const flightId = this.selectedFlightId();
       this.flightProgressPercent.set(0);
@@ -118,11 +134,7 @@ export class App {
             return of(null);
           }
           return this.tlogService.getFlight(selection.sessionId, selection.flightId).pipe(
-            tap((result) => console.log('Flight fetch result', result)),
-            catchError((error) => {
-              console.error('Flight fetch failed', error);
-              return EMPTY;
-            }),
+            catchError(() => EMPTY),
           );
         }),
         takeUntilDestroyed(),

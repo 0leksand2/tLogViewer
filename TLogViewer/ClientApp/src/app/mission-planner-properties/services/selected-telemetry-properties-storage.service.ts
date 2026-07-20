@@ -41,9 +41,14 @@ export class SelectedTelemetryPropertiesStorage {
             ? (record['order'] as number)
             : index;
 
+        if (!catalog) {
+          continue;
+        }
+
         restored.push({
           key,
-          label: catalog?.label ?? (typeof record['label'] === 'string' ? record['label'] : undefined),
+          label: catalog.label,
+          propertyValue: catalog.propertyValue,
           order,
         });
       }
@@ -59,6 +64,7 @@ export class SelectedTelemetryPropertiesStorage {
       .map((property, index) => ({
         key: property.key,
         label: property.label,
+        propertyValue: property.propertyValue,
         order: property.order ?? index,
       }))
       .sort((a, b) => a.order - b.order);

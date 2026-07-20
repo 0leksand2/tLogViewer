@@ -18,9 +18,11 @@
 }
 
 .spinner__stage {
+  --spinner-icon-size: 128px;
+
   position: relative;
   width: 100%;
-  height: 128px;
+  height: var(--spinner-icon-size);
   overflow: hidden;
 }
 
@@ -29,8 +31,8 @@
   top: 0;
   left: 0;
   display: block;
-  width: 128px;
-  height: 128px;
+  width: var(--spinner-icon-size);
+  height: var(--spinner-icon-size);
   animation: jet-fly 5s linear infinite;
   transform-origin: center center;
   user-select: none;
@@ -53,11 +55,11 @@
   }
 
   45% {
-    transform: translateX(calc(95vw - 128px)) scaleX(-1);
+    transform: translateX(calc(95vw - var(--spinner-icon-size))) scaleX(-1);
   }
 
   50% {
-    transform: translateX(calc(95vw - 128px)) scaleX(1);
+    transform: translateX(calc(95vw - var(--spinner-icon-size))) scaleX(1);
   }
 
   95% {
