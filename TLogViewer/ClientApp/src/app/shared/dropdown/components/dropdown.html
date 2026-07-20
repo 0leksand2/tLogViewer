@@ -1,8 +1,8 @@
-<div class="dropdown">
+<div class="dropdown" [class.dropdown--up]="openUpward()">
   <button
     type="button"
     class="dropdown__toggle"
-    (click)="toggle()"
+    (click)="toggle($event)"
     [disabled]="disabled()"
     [attr.aria-expanded]="open()"
     aria-haspopup="listbox"
@@ -24,7 +24,7 @@
             role="option"
             [attr.aria-selected]="value() === option.value"
             [class.dropdown__option--selected]="value() === option.value"
-            (click)="selectOption(option)"
+            (click)="selectOption(option, $event)"
           >
             {{ option.label }}
           </button>

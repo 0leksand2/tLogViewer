@@ -1,0 +1,60 @@
+<div
+  class="flight-player"
+  [class.flight-player--disabled]="!hasPlayback()"
+  role="group"
+  aria-label="Flight playback"
+>
+  <div class="flight-player__controls">
+    <button
+      type="button"
+      class="flight-player__btn"
+      (click)="togglePlay()"
+      [disabled]="!hasPlayback()"
+      [attr.aria-label]="playing() ? 'Pause' : 'Play'"
+    >
+      @if (playing()) {
+        <span class="flight-player__icon flight-player__icon--pause" aria-hidden="true"></span>
+      } @else {
+        <span class="flight-player__icon flight-player__icon--play" aria-hidden="true"></span>
+      }
+    </button>
+
+    <button
+      type="button"
+      class="flight-player__btn"
+      (click)="forward()"
+      [disabled]="!hasPlayback()"
+      [attr.aria-label]="'Forward ' + forwardPercent + '%'"
+    >
+      <span class="flight-player__icon flight-player__icon--forward" aria-hidden="true"></span>
+    </button>
+
+    <div class="flight-player__speed-wrap">
+      <app-dropdown
+        [options]="speedOptions"
+        [value]="speedValue()"
+        (valueChange)="onSpeedChange($event)"
+        [openUpward]="true"
+        [disabled]="!hasPlayback()"
+        placeholder="Speed"
+        ariaLabel="Playback speed"
+      />
+    </div>
+  </div>
+
+  <div class="flight-player__timeline">
+    <span class="flight-player__percent">{{ progressLabel() }}</span>
+    <input
+      type="range"
+      class="flight-player__slider"
+      min="0"
+      max="100"
+      step="0.1"
+      [value]="progressPercent()"
+      [disabled]="!hasPlayback()"
+      (input)="onSliderInput($event)"
+      aria-label="Flight progress"
+    />
+    <span class="flight-player__percent">{{ endLabel() }}</span>
+  </div>
+</div>

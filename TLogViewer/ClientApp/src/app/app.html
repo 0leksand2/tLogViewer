@@ -30,4 +30,14 @@
     }
     <app-tlog-load-menu (uploaded)="onTlogUploaded($event)" />
   </div>
+
+  <div class="app-shell__player">
+    <app-flight-player
+      [playbackPoints]="playbackPoints()"
+      [durationSeconds]="selectedFlightDuration()"
+      [(progressPercent)]="flightProgressPercent"
+      [(playing)]="flightPlaying"
+      [(playbackSpeed)]="flightPlaybackSpeed"
+    />
+  </div>
 </div>

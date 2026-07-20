@@ -3,12 +3,6 @@ using tLogViewer.Reader.Services;
 
 namespace tLogViewer.Services;
 
-public interface ITlogProcessingService
-{
-    TlogParseResult Process(Stream stream);
-    TlogParseResult Process(string filePath);
-}
-
 public sealed class TlogProcessingService : ITlogProcessingService
 {
     private readonly ILogAnalyticsService _analytics;

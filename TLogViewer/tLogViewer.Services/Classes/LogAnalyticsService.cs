@@ -1,21 +1,14 @@
+using System.Reflection;
+using System.Text.Json;
 using tLogViewer.Core.Models;
 using tLogViewer.DTO.Messages;
 
 namespace tLogViewer.Services;
 
-public interface ILogAnalyticsService
-{
-    /// <summary>
-    /// Splits parsed messages into flights based on Heartbeat SafetyArmed transitions.
-    /// Each flight is trimmed by <paramref name="trimSeconds"/> before arm and after disarm.
-    /// </summary>
-    IReadOnlyList<FlightDto> SplitIntoFlights(
-        IReadOnlyList<MavMessageDto> messages,
-        double trimSeconds = 30);
-}
-
 public sealed class LogAnalyticsService : ILogAnalyticsService
 {
+    private static readonly JsonNamingPolicy PropertyNaming = JsonNamingPolicy.CamelCase;
+
     public IReadOnlyList<FlightDto> SplitIntoFlights(
         IReadOnlyList<MavMessageDto> messages,
         double trimSeconds = 30)
@@ -55,14 +48,26 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
                 (start, end) = (end, start);
             }
 
-            var flightMessages = new List<MavMessageDto>();
+            var byMillisecond = new Dictionary<long, Dictionary<string, object>>();
+            var messageCount = 0;
+
             foreach (var message in messages)
             {
                 var time = TlogTime.ParseUtc(message.TimeUtc);
-                if (time >= start && time <= end)
+                if (time < start || time > end)
                 {
-                    flightMessages.Add(message);
+                    continue;
                 }
+
+                var ms = time.ToUnixTimeMilliseconds();
+                if (!byMillisecond.TryGetValue(ms, out var atMs))
+                {
+                    atMs = new Dictionary<string, object>(StringComparer.Ordinal);
+                    byMillisecond[ms] = atMs;
+                }
+
+                PushFlattenedValues(atMs, message);
+                messageCount++;
             }
 
             flights.Add(new FlightDto
@@ -73,12 +78,37 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
                 ArmedFromTimeUtc = Format(armedFrom),
                 ArmedUntilTimeUtc = Format(armedUntil),
                 DurationSeconds = (end - start).TotalSeconds,
-                MessageCount = flightMessages.Count,
-                Messages = flightMessages
+                MessageCount = messageCount,
+                Messages = byMillisecond.ToDictionary(
+                    static pair => pair.Key,
+                    static pair => (IReadOnlyDictionary<string, object>)pair.Value)
             });
         }
 
         return flights;
+    }
+
+    /// <summary>
+    /// Flattens message payload into keys named <c>{messageId}_{valueName}</c>.
+    /// </summary>
+    private static void PushFlattenedValues(Dictionary<string, object> atMs, MavMessageDto message)
+    {
+        foreach (var property in message.Data.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        {
+            if (property.GetIndexParameters().Length > 0)
+            {
+                continue;
+            }
+
+            var value = property.GetValue(message.Data);
+            if (value is null)
+            {
+                continue;
+            }
+
+            var valueName = PropertyNaming.ConvertName(property.Name);
+            atMs[$"{message.MessageId}_{valueName}"] = value;
+        }
     }
 
     private static List<(DateTimeOffset ArmedFrom, DateTimeOffset ArmedUntil)> FindArmedIntervals(

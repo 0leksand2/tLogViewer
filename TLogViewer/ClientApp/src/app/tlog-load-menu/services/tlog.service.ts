@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { RestService } from '../../core/services/rest.service';
 import { TlogFlightResult, TlogUploadResult } from '../models/mav-message.models';
 
-export type { TlogFlightResult, TlogUploadResult } from '../models/mav-message.models';
+export type { TlogUploadResult } from '../models/mav-message.models';
 
 @Injectable({ providedIn: 'root' })
 export class TlogService {

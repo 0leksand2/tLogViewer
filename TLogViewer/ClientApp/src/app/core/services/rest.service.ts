@@ -20,18 +20,6 @@ export class RestService {
     return this.http.post<T>(this.url(path), body, options);
   }
 
-  put<T>(path: string, body: unknown, options?: RestRequestOptions): Observable<T> {
-    return this.http.put<T>(this.url(path), body, options);
-  }
-
-  patch<T>(path: string, body: unknown, options?: RestRequestOptions): Observable<T> {
-    return this.http.patch<T>(this.url(path), body, options);
-  }
-
-  delete<T>(path: string, options?: RestRequestOptions): Observable<T> {
-    return this.http.delete<T>(this.url(path), options);
-  }
-
   /** Multipart upload — field name defaults to `file`. */
   upload<T>(
     path: string,

@@ -1,4 +1,6 @@
 import { Component, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, switchMap, of, tap, catchError, EMPTY } from 'rxjs';
 import { MapComponent } from './map/components/map';
 import { MapModule } from './map/map.module';
 import { SideMenuModule } from './side-menu/side-menu.module';
@@ -7,13 +9,21 @@ import { ModalModule } from './shared/modal/modal.module';
 import { DropdownOption } from './shared/dropdown/models/dropdown-option.model';
 import { MissionPlannerPropertiesModule } from './mission-planner-properties/mission-planner-properties.module';
 import { TlogLoadMenuModule } from './tlog-load-menu/tlog-load-menu.module';
-import { FlightSummary, TlogUploadResult } from './tlog-load-menu/models/mav-message.models';
+import { TlogService } from './tlog-load-menu/services/tlog.service';
+import {
+  Flight,
+  FlightSummary,
+  TlogFlightResult,
+  TlogUploadResult,
+} from './tlog-load-menu/models/mav-message.models';
 import { ModalCloseResult } from './shared/modal/models/modal-content.model';
 import {
   MissionPlannerProperty,
   MissionPlannerPropertyKey,
 } from './mission-planner-properties/models/mission-planner-properties.const';
 import { SelectedTelemetryPropertiesStorage } from './mission-planner-properties/services/selected-telemetry-properties-storage.service';
+import { FlightPlayerModule } from './flight-player/flight-player.module';
+import { sortedPlaybackPoints } from './flight-player/utils/playback-timeline';
 
 @Component({
   selector: 'app-root',
@@ -25,20 +35,28 @@ import { SelectedTelemetryPropertiesStorage } from './mission-planner-properties
     DropdownModule,
     MissionPlannerPropertiesModule,
     ModalModule,
+    FlightPlayerModule,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App {
   private readonly selectedPropertiesStorage = inject(SelectedTelemetryPropertiesStorage);
+  private readonly tlogService = inject(TlogService);
+  private readonly flightSelection$ = new Subject<{ sessionId: string; flightId: string } | null>();
 
   protected readonly menuOpen = signal(true);
   protected readonly propertiesModalOpen = signal(false);
   protected readonly selectedProperties = signal<MissionPlannerProperty[]>(
     this.selectedPropertiesStorage.load(),
   );
+  protected readonly sessionId = signal<string | null>(null);
   protected readonly flightSummaries = signal<FlightSummary[]>([]);
   protected readonly selectedFlightId = signal<string | null>(null);
+  protected readonly loadedFlight = signal<Flight | null>(null);
+  protected readonly flightProgressPercent = signal(0);
+  protected readonly flightPlaying = signal(false);
+  protected readonly flightPlaybackSpeed = signal(100);
 
   protected readonly selectedPropertyKeys = computed<MissionPlannerPropertyKey[]>(() =>
     [...this.selectedProperties()]
@@ -48,6 +66,19 @@ export class App {
 
   protected readonly orderedSelectedProperties = computed(() =>
     [...this.selectedProperties()].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+  );
+
+  protected readonly selectedFlightSummary = computed(
+    () => this.flightSummaries().find((flight) => flight.id === this.selectedFlightId()) ?? null,
+  );
+
+  protected readonly selectedFlightDuration = computed(
+    () => this.loadedFlight()?.durationSeconds ?? this.selectedFlightSummary()?.durationSeconds ?? 0,
+  );
+
+  /** Each messages-dict key is a point on the playback scale. */
+  protected readonly playbackPoints = computed(() =>
+    sortedPlaybackPoints(this.loadedFlight()?.messages),
   );
 
   protected readonly flightOptions = computed<DropdownOption[]>(() =>
@@ -64,6 +95,43 @@ export class App {
       this.menuOpen();
       window.setTimeout(() => this.map()?.invalidateSize(), 220);
     });
+
+    effect(() => {
+      const sessionId = this.sessionId();
+      const flightId = this.selectedFlightId();
+      this.flightProgressPercent.set(0);
+      this.flightPlaying.set(false);
+
+      if (!sessionId || !flightId) {
+        this.loadedFlight.set(null);
+        this.flightSelection$.next(null);
+        return;
+      }
+
+      this.flightSelection$.next({ sessionId, flightId });
+    });
+
+    this.flightSelection$
+      .pipe(
+        switchMap((selection) => {
+          if (!selection) {
+            return of(null);
+          }
+          return this.tlogService.getFlight(selection.sessionId, selection.flightId).pipe(
+            tap((result) => console.log('Flight fetch result', result)),
+            catchError((error) => {
+              console.error('Flight fetch failed', error);
+              return EMPTY;
+            }),
+          );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe((result: TlogFlightResult | null) => {
+        this.loadedFlight.set(result?.flight ?? null);
+        this.flightProgressPercent.set(0);
+        this.flightPlaying.set(false);
+      });
   }
 
   protected openPropertiesModal(): void {
@@ -86,7 +154,9 @@ export class App {
   }
 
   protected onTlogUploaded(result: TlogUploadResult): void {
+    this.sessionId.set(result.sessionId);
     this.flightSummaries.set(result.flights);
+    this.loadedFlight.set(null);
     this.selectedFlightId.set(result.flights[0]?.id ?? null);
   }
 

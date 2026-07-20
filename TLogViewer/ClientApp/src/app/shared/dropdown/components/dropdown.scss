@@ -5,6 +5,11 @@
 
 .dropdown {
   position: relative;
+
+  &--up .dropdown__menu {
+    top: auto;
+    bottom: calc(100% + 0.35rem);
+  }
 }
 
 .dropdown__toggle {
@@ -62,7 +67,7 @@
   top: calc(100% + 0.35rem);
   left: 0;
   right: 0;
-  z-index: 1003;
+  z-index: 1100;
   margin: 0;
   padding: 0.35rem;
   list-style: none;

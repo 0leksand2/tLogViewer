@@ -21,6 +21,7 @@ export class DropdownComponent {
   readonly placeholder = input('Select…');
   readonly ariaLabel = input('Select option');
   readonly disabled = input(false);
+  readonly openUpward = input(false);
   readonly value = model<string | null>(null);
 
   private readonly host = inject(ElementRef<HTMLElement>);
@@ -35,14 +36,16 @@ export class DropdownComponent {
     return this.options().find((option) => option.value === current)?.label ?? null;
   });
 
-  toggle(): void {
+  toggle(event?: Event): void {
+    event?.stopPropagation();
     if (this.disabled()) {
       return;
     }
     this.open.update((isOpen) => !isOpen);
   }
 
-  selectOption(option: DropdownOption): void {
+  selectOption(option: DropdownOption, event?: Event): void {
+    event?.stopPropagation();
     this.value.set(option.value);
     this.open.set(false);
   }

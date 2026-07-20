@@ -3,32 +3,6 @@ using tLogViewer.Core.Models;
 
 namespace tLogViewer.Services;
 
-public interface ITlogSessionStore
-{
-    string Store(string fileName, long size, TlogParseResult parseResult);
-
-    TlogSessionSnapshot? GetSnapshot(string sessionId);
-
-    /// <summary>
-    /// Takes one flight for the client. Marks it downloaded; removes the session
-    /// when every flight has been downloaded.
-    /// </summary>
-    bool TryTakeFlight(string sessionId, Guid flightId, out FlightDto? flight, out bool sessionReleased);
-
-    int RemoveExpired(TimeSpan maxAge);
-}
-
-public sealed class TlogSessionSnapshot
-{
-    public required string SessionId { get; init; }
-    public required string FileName { get; init; }
-    public long Size { get; init; }
-    public DateTimeOffset CreatedAtUtc { get; init; }
-    public int TotalRecords { get; init; }
-    public int ParsedCount { get; init; }
-    public required IReadOnlyList<FlightSummary> Flights { get; init; }
-}
-
 public sealed class TlogSessionStore : ITlogSessionStore
 {
     private readonly ConcurrentDictionary<string, SessionEntry> _sessions = new(StringComparer.Ordinal);

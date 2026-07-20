@@ -14,6 +14,9 @@
   --map-zoom-button-height: 1.875rem;
   --map-controls-left: var(--menu-control-left);
   --map-controls-top: calc(var(--menu-control-left) + var(--menu-control-size) + 0.5rem);
+  --player-left: 0;
+  --player-right: 0;
+  --player-bottom: 0;
 
   position: relative;
   width: 100%;
@@ -23,6 +26,7 @@
   &--menu-open {
     --map-controls-left: calc(var(--side-panel-width) + var(--menu-control-left));
     --map-controls-top: var(--menu-control-left);
+    --player-left: var(--side-panel-width);
   }
 
   &__map {
@@ -46,5 +50,20 @@
     gap: 0.5rem;
     max-width: calc(100% - 1.5rem);
     pointer-events: auto;
+  }
+
+  &__player {
+    position: absolute;
+    left: var(--player-left);
+    right: var(--player-right);
+    bottom: var(--player-bottom);
+    z-index: 1100;
+    overflow: visible;
+    transition: left 0.2s ease;
+    pointer-events: none;
+
+    > * {
+      pointer-events: auto;
+    }
   }
 }
