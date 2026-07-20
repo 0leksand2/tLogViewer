@@ -1,4 +1,4 @@
-import { Component, model } from '@angular/core';
+import { Component, model, output } from '@angular/core';
 
 @Component({
   selector: 'app-side-menu',
@@ -8,6 +8,7 @@ import { Component, model } from '@angular/core';
 })
 export class SideMenuComponent {
   readonly open = model(true);
+  readonly openProperties = output<void>();
 
   toggle(): void {
     this.open.update((value) => !value);
@@ -15,5 +16,9 @@ export class SideMenuComponent {
 
   close(): void {
     this.open.set(false);
+  }
+
+  requestProperties(): void {
+    this.openProperties.emit();
   }
 }

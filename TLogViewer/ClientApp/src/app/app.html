@@ -1,5 +1,28 @@
-<div class="app-shell">
+<div class="app-shell" [class.app-shell--menu-open]="menuOpen()">
   <app-map class="app-shell__map" />
-  <app-side-menu [(open)]="menuOpen" />
-  <app-tlog-load-menu (uploaded)="onTlogUploaded($event)" />
+  <app-side-menu [(open)]="menuOpen" (openProperties)="openPropertiesModal()" />
+
+  <app-modal
+    title="Mission Planner Properties"
+    [(open)]="propertiesModalOpen"
+    size="wide"
+    (saved)="onPropertiesSaved($event)"
+    (cancelled)="onPropertiesCancelled()"
+  >
+    @if (propertiesModalOpen()) {
+      <app-mission-planner-properties [selectedKeys]="selectedPropertyKeys()" />
+    }
+  </app-modal>
+
+  <div class="app-shell__toolbar">
+    @if (flightOptions().length > 0) {
+      <app-dropdown
+        [(value)]="selectedFlightId"
+        [options]="flightOptions()"
+        placeholder="Select flight"
+        ariaLabel="Select flight"
+      />
+    }
+    <app-tlog-load-menu (uploaded)="onTlogUploaded($event)" />
+  </div>
 </div>

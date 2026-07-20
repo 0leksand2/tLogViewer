@@ -1,0 +1,22 @@
+@if (visible()) {
+  <div
+    class="spinner-overlay"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+    [attr.aria-label]="message()"
+  >
+    <div class="spinner__stage" aria-hidden="true">
+      <img
+        class="spinner__icon"
+        src="assets/icons/fighter-jet.png"
+        width="128"
+        height="128"
+        alt=""
+      />
+    </div>
+    @if (message()) {
+      <p class="spinner__message">{{ message() }}</p>
+    }
+  </div>
+}

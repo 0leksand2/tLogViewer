@@ -9,3 +9,47 @@
   height: 100%;
   z-index: 0;
 }
+
+:host ::ng-deep .leaflet-top.leaflet-left {
+  margin: 0;
+  left: var(--map-controls-left, 0.75rem);
+  top: var(--map-controls-top, calc(0.75rem + 2.5rem + 0.5rem));
+  transition: left 0.2s ease, top 0.2s ease;
+
+  .leaflet-control {
+    margin: 0;
+  }
+
+  .leaflet-control-zoom.leaflet-bar {
+    border: 1px solid var(--menu-control-border-color, #e2e5eb);
+    border-radius: var(--menu-control-radius, 6px);
+    box-shadow: var(--menu-control-shadow, 0 1px 4px rgb(0 0 0 / 18%));
+    overflow: hidden;
+  }
+
+  .leaflet-control-zoom a {
+    width: var(--menu-control-size, 2.5rem);
+    height: var(--map-zoom-button-height, 1.875rem);
+    line-height: var(--map-zoom-button-height, 1.875rem);
+    font-size: 1.25rem;
+    border-bottom: 1px solid var(--menu-control-border-color, #e2e5eb);
+    background: #fff;
+    color: #1a1d24;
+
+    &:hover,
+    &:focus {
+      background: #f0f2f5;
+    }
+  }
+
+  .leaflet-control-zoom a:first-child {
+    border-top-left-radius: var(--menu-control-radius, 6px);
+    border-top-right-radius: var(--menu-control-radius, 6px);
+  }
+
+  .leaflet-control-zoom a:last-child {
+    border-bottom: none;
+    border-bottom-left-radius: var(--menu-control-radius, 6px);
+    border-bottom-right-radius: var(--menu-control-radius, 6px);
+  }
+}

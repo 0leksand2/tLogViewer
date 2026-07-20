@@ -1,6 +1,14 @@
 @import 'leaflet/dist/leaflet.css';
 @import 'ngx-toastr/toastr';
 
+:root {
+  --color-primary: #5d05f5;
+  --color-primary-hover: #762cf5;
+  --color-primary-text: #fff;
+  --color-primary-soft: rgb(93 5 245 / 12%);
+  --color-primary-soft-hover: rgb(93 5 245 / 18%);
+}
+
 *,
 *::before,
 *::after {

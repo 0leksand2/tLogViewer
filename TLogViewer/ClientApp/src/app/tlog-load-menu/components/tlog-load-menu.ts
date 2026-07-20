@@ -8,11 +8,13 @@ import {
   viewChild,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { SpinnerComponent } from '../../shared/spinner/components/spinner';
 import { TlogService, TlogUploadResult } from '../services/tlog.service';
 
 @Component({
   selector: 'app-tlog-load-menu',
   standalone: true,
+  imports: [SpinnerComponent],
   templateUrl: './tlog-load-menu.html',
   styleUrl: './tlog-load-menu.scss',
 })

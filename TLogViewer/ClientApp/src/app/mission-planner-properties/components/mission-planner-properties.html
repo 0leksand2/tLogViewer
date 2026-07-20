@@ -1,0 +1,55 @@
+<div class="mp-props">
+  <div class="mp-props__search">
+    <input
+      type="text"
+      class="mp-props__search-input"
+      placeholder="Search properties…"
+      role="searchbox"
+      [value]="searchQuery()"
+      (input)="onSearchInput($event)"
+      aria-label="Search properties"
+    />
+    @if (searchQuery()) {
+      <button type="button" class="mp-props__search-clear" (click)="clearSearch()" aria-label="Clear search">
+        &times;
+      </button>
+    }
+  </div>
+
+  @if (groupedProperties().length === 0) {
+    <p class="mp-props__empty">No properties match “{{ searchQuery() }}”.</p>
+  } @else {
+    <div class="mp-props__list">
+      @for (group of groupedProperties(); track group.letter) {
+        <section class="mp-props__section" [attr.aria-label]="'Properties starting with ' + group.letter">
+          <h3 class="mp-props__letter">{{ group.letter }}</h3>
+          <ul class="mp-props__grid" role="list">
+            @for (property of group.properties; track property.key) {
+              <li>
+                <label
+                  class="mp-props__item"
+                  [class.mp-props__item--selected]="isSelected(property.key)"
+                >
+                  <input
+                    type="checkbox"
+                    class="mp-props__checkbox"
+                    [checked]="isSelected(property.key)"
+                    (change)="toggleProperty(property.key, $any($event.target).checked)"
+                  />
+                  <span class="mp-props__name">
+                    @if (property.label) {
+                      <span class="mp-props__label">{{ property.label }}</span>
+                      <span class="mp-props__key"> ({{ property.key }})</span>
+                    } @else {
+                      <span class="mp-props__label">{{ property.key }}</span>
+                    }
+                  </span>
+                </label>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  }
+</div>

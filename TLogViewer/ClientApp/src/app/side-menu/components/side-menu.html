@@ -1,15 +1,17 @@
-<button
-  type="button"
-  class="menu-toggle"
-  (click)="toggle()"
-  [attr.aria-expanded]="open()"
-  aria-controls="app-side-panel"
-  [attr.aria-label]="open() ? 'Close menu' : 'Open menu'"
->
-  <span class="menu-toggle__bar" aria-hidden="true"></span>
-  <span class="menu-toggle__bar" aria-hidden="true"></span>
-  <span class="menu-toggle__bar" aria-hidden="true"></span>
-</button>
+@if (!open()) {
+  <button
+    type="button"
+    class="menu-toggle"
+    (click)="toggle()"
+    [attr.aria-expanded]="open()"
+    aria-controls="app-side-panel"
+    aria-label="Open menu"
+  >
+    <span class="menu-toggle__bar" aria-hidden="true"></span>
+    <span class="menu-toggle__bar" aria-hidden="true"></span>
+    <span class="menu-toggle__bar" aria-hidden="true"></span>
+  </button>
+}
 
 <aside
   id="app-side-panel"
@@ -30,7 +32,9 @@
   </header>
 
   <div class="side-panel__body">
-    <p class="side-panel__hint">Filters, tracks, and log details will go here.</p>
+    <button type="button" class="side-panel__action" (click)="requestProperties()">
+      Telemetry properties
+    </button>
     <ng-content />
   </div>
 </aside>

@@ -1,17 +1,15 @@
 :host {
-  --btn-bg: #fff;
-  --btn-border: #e2e5eb;
-  --btn-text: #1a1d24;
-  --btn-muted: #5c6570;
-  --btn-shadow: 0 1px 4px rgb(0 0 0 / 18%);
-  --accent: #1f6feb;
-  --accent-text: #fff;
+  --btn-bg: var(--toolbar-bg, #fff);
+  --btn-border: var(--toolbar-border, #e2e5eb);
+  --btn-text: var(--toolbar-text, #1a1d24);
+  --btn-muted: var(--toolbar-muted, #5c6570);
+  --btn-shadow: var(--toolbar-shadow, 0 1px 4px rgb(0 0 0 / 18%));
+  --accent: var(--color-primary, #5d05f5);
+  --accent-hover: var(--color-primary-hover, #762cf5);
+  --accent-text: var(--color-primary-text, #fff);
 
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 1002;
-  pointer-events: auto;
+  display: block;
+  flex-shrink: 0;
 }
 
 .tlog-load {
@@ -90,7 +88,8 @@
     text-align: center;
 
     &:hover:not(:disabled) {
-      background: #1a5fd0;
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
     }
   }
 }

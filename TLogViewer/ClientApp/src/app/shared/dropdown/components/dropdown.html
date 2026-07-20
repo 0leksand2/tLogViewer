@@ -1,0 +1,35 @@
+<div class="dropdown">
+  <button
+    type="button"
+    class="dropdown__toggle"
+    (click)="toggle()"
+    [disabled]="disabled()"
+    [attr.aria-expanded]="open()"
+    aria-haspopup="listbox"
+    [attr.aria-label]="ariaLabel()"
+  >
+    <span class="dropdown__label" [class.dropdown__label--placeholder]="!selectedLabel()">
+      {{ selectedLabel() ?? placeholder() }}
+    </span>
+    <span class="dropdown__chevron" aria-hidden="true"></span>
+  </button>
+
+  @if (open()) {
+    <ul class="dropdown__menu" role="listbox" [attr.aria-label]="ariaLabel()">
+      @for (option of options(); track option.value) {
+        <li role="presentation">
+          <button
+            type="button"
+            class="dropdown__option"
+            role="option"
+            [attr.aria-selected]="value() === option.value"
+            [class.dropdown__option--selected]="value() === option.value"
+            (click)="selectOption(option)"
+          >
+            {{ option.label }}
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>
