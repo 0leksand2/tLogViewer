@@ -2,6 +2,8 @@
 export interface MissionPlannerProperty {
   key: string;
   label?: string;
+  /** Selection order among chosen properties (0-based). */
+  order?: number;
 }
 
 /** Format: Full Text Name (short name), or short name only when label is unknown. */

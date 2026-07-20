@@ -1,0 +1,29 @@
+<div class="data-tab">
+  <button type="button" class="data-tab__action" (click)="requestProperties()">
+    Telemetry properties
+  </button>
+
+  @if (tiles().length === 0) {
+    <p class="data-tab__empty">No telemetry properties selected.</p>
+  } @else {
+    <div
+      class="data-tab__grid"
+      [style.--tile-columns]="columnCount()"
+      cdkDropList
+      cdkDropListOrientation="mixed"
+      (cdkDropListDropped)="onTileDropped($event)"
+    >
+      @for (tile of tiles(); track tile.key) {
+        <article
+          class="data-tab__tile"
+          cdkDrag
+          [attr.title]="tile.name"
+          [attr.aria-label]="tile.name"
+        >
+          <span class="data-tab__tile-name">{{ tile.name }}</span>
+          <span class="data-tab__tile-value">{{ tile.value }}</span>
+        </article>
+      }
+    </div>
+  }
+</div>

@@ -1,4 +1,4 @@
-import { Component, computed, effect, signal, viewChild } from '@angular/core';
+import { Component, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { MapComponent } from './map/components/map';
 import { MapModule } from './map/map.module';
 import { SideMenuModule } from './side-menu/side-menu.module';
@@ -13,6 +13,7 @@ import {
   MissionPlannerProperty,
   MissionPlannerPropertyKey,
 } from './mission-planner-properties/models/mission-planner-properties.const';
+import { SelectedTelemetryPropertiesStorage } from './mission-planner-properties/services/selected-telemetry-properties-storage.service';
 
 @Component({
   selector: 'app-root',
@@ -29,14 +30,24 @@ import {
   styleUrl: './app.scss',
 })
 export class App {
+  private readonly selectedPropertiesStorage = inject(SelectedTelemetryPropertiesStorage);
+
   protected readonly menuOpen = signal(true);
   protected readonly propertiesModalOpen = signal(false);
-  protected readonly selectedProperties = signal<MissionPlannerProperty[]>([]);
+  protected readonly selectedProperties = signal<MissionPlannerProperty[]>(
+    this.selectedPropertiesStorage.load(),
+  );
   protected readonly flightSummaries = signal<FlightSummary[]>([]);
   protected readonly selectedFlightId = signal<string | null>(null);
 
   protected readonly selectedPropertyKeys = computed<MissionPlannerPropertyKey[]>(() =>
-    this.selectedProperties().map((property) => property.key),
+    [...this.selectedProperties()]
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((property) => property.key),
+  );
+
+  protected readonly orderedSelectedProperties = computed(() =>
+    [...this.selectedProperties()].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
   );
 
   protected readonly flightOptions = computed<DropdownOption[]>(() =>
@@ -62,8 +73,12 @@ export class App {
   protected onPropertiesSaved(result: ModalCloseResult): void {
     const value = result.value as MissionPlannerProperty[] | undefined;
     if (value) {
-      this.selectedProperties.set(value);
+      this.persistSelectedProperties(value);
     }
+  }
+
+  protected onPropertiesReordered(properties: MissionPlannerProperty[]): void {
+    this.persistSelectedProperties(properties);
   }
 
   protected onPropertiesCancelled(): void {
@@ -73,6 +88,11 @@ export class App {
   protected onTlogUploaded(result: TlogUploadResult): void {
     this.flightSummaries.set(result.flights);
     this.selectedFlightId.set(result.flights[0]?.id ?? null);
+  }
+
+  private persistSelectedProperties(properties: MissionPlannerProperty[]): void {
+    this.selectedProperties.set(properties);
+    this.selectedPropertiesStorage.save(properties);
   }
 
   private formatFlightOption(flight: FlightSummary, index: number): string {

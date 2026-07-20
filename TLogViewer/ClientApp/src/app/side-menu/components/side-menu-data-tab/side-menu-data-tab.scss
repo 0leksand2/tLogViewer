@@ -1,0 +1,127 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.data-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100%;
+  min-height: 0;
+}
+
+.data-tab__action {
+  flex-shrink: 0;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #e2e5eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #1a1d24;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+
+  &:hover {
+    background: #f0f2f5;
+  }
+}
+
+.data-tab__empty {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #5c6570;
+}
+
+.data-tab__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--tile-columns, 3), minmax(0, 1fr));
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  overflow: auto;
+  align-content: start;
+  gap: 1px;
+  border-top: 1px solid #e2e5eb;
+  background: #e2e5eb;
+}
+
+.data-tab__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.3rem;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 80px;
+  padding: 0.5rem 0.35rem;
+  border: none;
+  border-radius: 0;
+  background: #f7f8fa;
+  box-shadow: none;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &.cdk-drag-preview {
+    box-sizing: border-box;
+    border: 1px solid #e2e5eb;
+    background: #fff;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 16%);
+    cursor: grabbing;
+  }
+
+  &.cdk-drag-placeholder {
+    opacity: 0.35;
+    background: rgb(93 5 245 / 8%);
+  }
+
+  &.cdk-drag-animating {
+    transition: transform 160ms ease;
+  }
+}
+
+.data-tab__grid.cdk-drop-list-dragging .data-tab__tile:not(.cdk-drag-placeholder) {
+  transition: transform 160ms ease;
+}
+
+.data-tab__tile-name {
+  display: -webkit-box;
+  width: 100%;
+  overflow: hidden;
+  color: #5c6570;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.data-tab__tile-value {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  color: #1a1d24;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  word-break: break-all;
+}

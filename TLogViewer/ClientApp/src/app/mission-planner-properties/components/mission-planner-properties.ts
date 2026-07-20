@@ -24,7 +24,8 @@ export class MissionPlannerPropertiesComponent extends ModalContentBase<MissionP
   readonly selectedKeys = input<readonly MissionPlannerPropertyKey[]>([]);
 
   protected readonly searchQuery = signal('');
-  private readonly selected = signal<ReadonlySet<MissionPlannerPropertyKey>>(new Set());
+  /** Keys in selection order. */
+  private readonly selectedOrder = signal<MissionPlannerPropertyKey[]>([]);
 
   protected readonly groupedProperties = computed(() => {
     const sorted = [...this.filteredProperties()].sort((a, b) =>
@@ -56,28 +57,34 @@ export class MissionPlannerPropertiesComponent extends ModalContentBase<MissionP
   constructor() {
     super();
     effect(() => {
-      this.selected.set(new Set(this.selectedKeys()));
+      this.selectedOrder.set([...this.selectedKeys()]);
     });
   }
 
   override getModalValue(): MissionPlannerProperty[] {
-    const selected = this.selected();
-    return MISSION_PLANNER_PROPERTIES.filter((property) => selected.has(property.key));
+    return this.selectedOrder().map((key, order) => {
+      const catalog = MISSION_PLANNER_PROPERTIES.find((property) => property.key === key);
+      return {
+        key,
+        label: catalog?.label,
+        order,
+      };
+    });
   }
 
   protected isSelected(key: MissionPlannerPropertyKey): boolean {
-    return this.selected().has(key);
+    return this.selectedOrder().includes(key);
   }
 
   protected toggleProperty(key: MissionPlannerPropertyKey, checked: boolean): void {
-    this.selected.update((current) => {
-      const next = new Set(current);
+    this.selectedOrder.update((current) => {
       if (checked) {
-        next.add(key);
-      } else {
-        next.delete(key);
+        if (current.includes(key)) {
+          return current;
+        }
+        return [...current, key];
       }
-      return next;
+      return current.filter((selectedKey) => selectedKey !== key);
     });
   }
 

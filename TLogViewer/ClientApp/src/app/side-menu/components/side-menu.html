@@ -32,9 +32,17 @@
   </header>
 
   <div class="side-panel__body">
-    <button type="button" class="side-panel__action" (click)="requestProperties()">
-      Telemetry properties
-    </button>
+    <app-tabs [tabs]="tabs" [(activeTabId)]="activeTabId" ariaLabel="Side menu sections">
+      @if (activeTabId() === 'data') {
+        <app-side-menu-data-tab
+          [properties]="selectedProperties()"
+          (openProperties)="requestProperties()"
+          (propertiesReordered)="onPropertiesReordered($event)"
+        />
+      } @else if (activeTabId() === 'messages') {
+        <app-side-menu-messages-tab />
+      }
+    </app-tabs>
     <ng-content />
   </div>
 </aside>

@@ -1,6 +1,11 @@
 <div class="app-shell" [class.app-shell--menu-open]="menuOpen()">
   <app-map class="app-shell__map" />
-  <app-side-menu [(open)]="menuOpen" (openProperties)="openPropertiesModal()" />
+  <app-side-menu
+    [(open)]="menuOpen"
+    [selectedProperties]="orderedSelectedProperties()"
+    (openProperties)="openPropertiesModal()"
+    (propertiesReordered)="onPropertiesReordered($event)"
+  />
 
   <app-modal
     title="Mission Planner Properties"

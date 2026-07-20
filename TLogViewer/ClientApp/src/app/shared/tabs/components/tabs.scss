@@ -1,0 +1,77 @@
+:host {
+  display: block;
+  min-height: 0;
+  flex: 1;
+}
+
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.tabs__list {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid #e2e5eb;
+  background: transparent;
+}
+
+.tabs__tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 2.5rem;
+  margin-bottom: -1px;
+  padding: 0.65rem 0.75rem;
+  border: none;
+  border-right: 1px solid #e2e5eb;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #5c6570;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: none;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &:hover {
+    color: #1a1d24;
+    background: transparent;
+  }
+
+  &--active {
+    background: transparent;
+    color: var(--color-primary, #5d05f5);
+    border-bottom-color: var(--color-primary, #5d05f5);
+    box-shadow: none;
+
+    &:hover {
+      background: transparent;
+      color: var(--color-primary, #5d05f5);
+    }
+  }
+}
+
+.tabs__panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 1rem 1rem 1.25rem;
+}
+
+.tabs__panel > * {
+  flex: 1;
+  min-height: 0;
+}
