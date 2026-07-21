@@ -52,6 +52,40 @@
     pointer-events: auto;
   }
 
+  &__toolbar-btn {
+    min-width: 2.5rem;
+    height: 2.5rem;
+    padding: 0 0.85rem;
+    border: 1px solid var(--toolbar-border);
+    border-radius: 6px;
+    background: var(--toolbar-bg);
+    box-shadow: var(--toolbar-shadow);
+    color: var(--toolbar-text);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      background: #f0f2f5;
+    }
+
+    &--icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      padding: 0;
+
+      img {
+        display: block;
+        width: 1.125rem;
+        height: 1.125rem;
+        object-fit: contain;
+      }
+    }
+  }
+
   &__player {
     position: absolute;
     left: var(--player-left);

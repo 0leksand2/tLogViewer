@@ -79,15 +79,36 @@ export class SideMenuDataTabComponent {
       return '0.0';
     }
     if (typeof value === 'number') {
-      return Number.isFinite(value) ? value.toFixed(1) : '0.0';
+      if (!Number.isFinite(value)) {
+        return '0.0';
+      }
+      const display = this.normalizeHeadingDegrees(value, key);
+      return display.toFixed(1);
     }
     if (typeof value === 'boolean') {
       return value ? 'true' : 'false';
     }
     if (typeof value === 'string') {
+      if (key === 'yaw' || key === 'wind_dir') {
+        const parsed = Number(value);
+        if (Number.isFinite(parsed)) {
+          return this.normalizeHeadingDegrees(parsed, key).toFixed(1);
+        }
+      }
       return value;
     }
     return String(value);
+  }
+
+  /** Negative headings → 0–360° (e.g. -10 → 350). */
+  private normalizeHeadingDegrees(degrees: number, key: string): number {
+    if (key !== 'yaw' && key !== 'wind_dir') {
+      return degrees;
+    }
+    if (degrees < 0) {
+      return 360 + degrees;
+    }
+    return degrees;
   }
 
   /** Seconds → `m:ss` (e.g. 125.4 → `2:05`). */

@@ -178,7 +178,14 @@ export function resolveActiveHomePoint(
 export function resolvePlanePosition(
   messages: Record<string, Record<string, unknown>> | null | undefined,
   playbackMs: number | null,
-): { lat: number; lon: number; yaw: number | null; navBearing: number | null } | null {
+): {
+  lat: number;
+  lon: number;
+  yaw: number | null;
+  navBearing: number | null;
+  windDir: number | null;
+  windSpeed: number | null;
+} | null {
   if (!messages || playbackMs === null) {
     return null;
   }
@@ -194,9 +201,13 @@ export function resolvePlanePosition(
     asFiniteNumber(fields['yaw']) ?? asFiniteNumber(fields['74_headingDeg']);
   const navBearing =
     asFiniteNumber(fields['navBearing']) ?? asFiniteNumber(fields['62_navBearing']);
+  const windDir =
+    asFiniteNumber(fields['windDir']) ?? asFiniteNumber(fields['168_directionDeg']);
+  const windSpeed =
+    asFiniteNumber(fields['windSpeed']) ?? asFiniteNumber(fields['168_speedMS']);
 
   if (lat !== null && lon !== null) {
-    return { lat, lon, yaw, navBearing };
+    return { lat, lon, yaw, navBearing, windDir, windSpeed };
   }
 
   // Fallback for flights processed before lat/lon enrichment.
@@ -208,7 +219,7 @@ export function resolvePlanePosition(
     const fallbackLat = asFiniteNumber(fields[latKey]);
     const fallbackLon = asFiniteNumber(fields[lonKey]);
     if (fallbackLat !== null && fallbackLon !== null) {
-      return { lat: fallbackLat, lon: fallbackLon, yaw, navBearing };
+      return { lat: fallbackLat, lon: fallbackLon, yaw, navBearing, windDir, windSpeed };
     }
   }
 

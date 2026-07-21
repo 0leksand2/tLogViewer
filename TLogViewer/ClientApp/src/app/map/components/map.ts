@@ -1,11 +1,14 @@
 import {
   afterNextRender,
   Component,
+  effect,
   ElementRef,
+  inject,
   OnDestroy,
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
+import { MapDisplaySettingsService } from '../services/map-display-settings.service';
 
 export interface HomeLocationOptions {
   /** Pan/zoom the map when the active flight changes. */
@@ -20,6 +23,7 @@ export interface HomeLocationOptions {
 })
 export class MapComponent implements OnDestroy {
   private readonly mapContainer = viewChild.required<ElementRef<HTMLDivElement>>('mapContainer');
+  private readonly displaySettings = inject(MapDisplaySettingsService);
   private map?: L.Map;
   private homeMarker?: L.Marker;
   private planeMarker?: L.Marker;
@@ -36,6 +40,8 @@ export class MapComponent implements OnDestroy {
     lng: number;
     yaw: number | null;
     navBearing: number | null;
+    windDir: number | null;
+    windSpeed: number | null;
   } | null = null;
   private pendingTarget: { lat: number; lng: number; altitudeM: number | null } | null = null;
   private lastRecenterFlightKey: string | null = null;
@@ -46,18 +52,33 @@ export class MapComponent implements OnDestroy {
     lng: number;
     yaw: number | null;
     navBearing: number | null;
+    windDir: number | null;
+    windSpeed: number | null;
   } | null = null;
   private lastAppliedYaw: number | null = null;
   private lastAppliedNavBearing: number | null = null;
+  private lastAppliedWindDir: number | null = null;
+  private lastAppliedWindSpeed: number | null = null;
   private lastPlaneFlightKey: string | null = null;
   private lastTargetState: { lat: number; lng: number; altitudeM: number | null } | null =
     null;
   private lastTargetAltitudeM: number | null = null;
   private planeIconBody?: HTMLElement;
+  private planeHeadingLine?: HTMLElement;
   private planeNavBearingLayer?: HTMLElement;
+  private planeWindLayer?: HTMLElement;
+  private planeWindLine?: HTMLElement;
+  private planeWindArrow?: HTMLElement;
 
   constructor() {
     afterNextRender(() => this.initMap());
+
+    effect(() => {
+      this.displaySettings.displayHeading();
+      this.displaySettings.displayTargetPath();
+      this.displaySettings.displayWind();
+      this.applyDisplayLineVisibility();
+    });
   }
 
   ngOnDestroy(): void {
@@ -121,6 +142,8 @@ export class MapComponent implements OnDestroy {
     yawDeg: number | null = null,
     flightKey: string | null = null,
     navBearingDeg: number | null = null,
+    windDirDeg: number | null = null,
+    windSpeedMS: number | null = null,
   ): void {
     if (
       latitudeDeg === null ||
@@ -144,11 +167,20 @@ export class MapComponent implements OnDestroy {
         lng: longitudeDeg,
         yaw: yawDeg,
         navBearing: navBearingDeg,
+        windDir: windDirDeg,
+        windSpeed: windSpeedMS,
       };
       return;
     }
 
-    this.applyPlaneMarker(latitudeDeg, longitudeDeg, yawDeg, navBearingDeg);
+    this.applyPlaneMarker(
+      latitudeDeg,
+      longitudeDeg,
+      yawDeg,
+      navBearingDeg,
+      windDirDeg,
+      windSpeedMS,
+    );
   }
 
   /** Show or hide the POSITION_TARGET_GLOBAL_INT setpoint. Pass null to clear. */
@@ -186,8 +218,14 @@ export class MapComponent implements OnDestroy {
     this.lastPlaneState = null;
     this.lastAppliedYaw = null;
     this.lastAppliedNavBearing = null;
+    this.lastAppliedWindDir = null;
+    this.lastAppliedWindSpeed = null;
     this.planeIconBody = undefined;
+    this.planeHeadingLine = undefined;
     this.planeNavBearingLayer = undefined;
+    this.planeWindLayer = undefined;
+    this.planeWindLine = undefined;
+    this.planeWindArrow = undefined;
     this.planeMarker?.setOpacity(0);
     this.planeMarker?.remove();
     this.planeMarker = undefined;
@@ -244,7 +282,14 @@ export class MapComponent implements OnDestroy {
     if (this.pendingPlane) {
       const pending = this.pendingPlane;
       this.pendingPlane = null;
-      this.applyPlaneMarker(pending.lat, pending.lng, pending.yaw, pending.navBearing);
+      this.applyPlaneMarker(
+        pending.lat,
+        pending.lng,
+        pending.yaw,
+        pending.navBearing,
+        pending.windDir,
+        pending.windSpeed,
+      );
     }
 
     if (this.pendingTarget) {
@@ -261,6 +306,8 @@ export class MapComponent implements OnDestroy {
     longitudeDeg: number,
     yawDeg: number | null,
     navBearingDeg: number | null,
+    windDirDeg: number | null,
+    windSpeedMS: number | null,
   ): void {
     if (!this.map) {
       return;
@@ -276,13 +323,25 @@ export class MapComponent implements OnDestroy {
       this.lastAppliedNavBearing = effectiveNavBearing;
     }
 
+    const effectiveWindDir = windDirDeg ?? this.lastAppliedWindDir;
+    if (effectiveWindDir !== null && Number.isFinite(effectiveWindDir)) {
+      this.lastAppliedWindDir = effectiveWindDir;
+    }
+
+    const effectiveWindSpeed = windSpeedMS ?? this.lastAppliedWindSpeed;
+    if (effectiveWindSpeed !== null && Number.isFinite(effectiveWindSpeed)) {
+      this.lastAppliedWindSpeed = effectiveWindSpeed;
+    }
+
     if (
       this.planeMarker &&
       this.lastPlaneState &&
       this.lastPlaneState.lat === latitudeDeg &&
       this.lastPlaneState.lng === longitudeDeg &&
       this.lastPlaneState.yaw === effectiveYaw &&
-      this.lastPlaneState.navBearing === effectiveNavBearing
+      this.lastPlaneState.navBearing === effectiveNavBearing &&
+      this.lastPlaneState.windDir === effectiveWindDir &&
+      this.lastPlaneState.windSpeed === effectiveWindSpeed
     ) {
       return;
     }
@@ -292,12 +351,19 @@ export class MapComponent implements OnDestroy {
       lng: longitudeDeg,
       yaw: effectiveYaw,
       navBearing: effectiveNavBearing,
+      windDir: effectiveWindDir,
+      windSpeed: effectiveWindSpeed,
     };
     const latLng = L.latLng(latitudeDeg, longitudeDeg);
 
     if (!this.planeMarker) {
       this.planeMarker = L.marker(latLng, {
-        icon: createPlaneIcon(effectiveYaw, effectiveNavBearing),
+        icon: createPlaneIcon(
+          effectiveYaw,
+          effectiveNavBearing,
+          effectiveWindDir,
+          effectiveWindSpeed,
+        ),
         keyboard: false,
         interactive: false,
         opacity: 0,
@@ -306,15 +372,29 @@ export class MapComponent implements OnDestroy {
 
       const element = this.planeMarker.getElement();
       this.planeIconBody = element?.querySelector('.plane-marker-icon__body') ?? undefined;
+      this.planeHeadingLine =
+        element?.querySelector('.plane-marker-icon__heading-line') ?? undefined;
       this.planeNavBearingLayer =
         element?.querySelector('.plane-marker-icon__nav-bearing') ?? undefined;
+      this.planeWindLayer =
+        element?.querySelector('.plane-marker-icon__wind') ?? undefined;
+      this.planeWindLine =
+        element?.querySelector('.plane-marker-icon__wind-line') ?? undefined;
+      this.planeWindArrow =
+        element?.querySelector('.plane-marker-icon__wind-arrow') ?? undefined;
       this.applyPlaneRotation(effectiveYaw);
       this.applyNavBearingRotation(effectiveNavBearing);
+      this.applyWindRotation(effectiveWindDir);
+      this.applyWindScale(effectiveWindSpeed);
+      this.applyDisplayLineVisibility();
       this.planeMarker.setOpacity(1);
     } else {
       this.planeMarker.setLatLng(latLng);
       this.applyPlaneRotation(effectiveYaw);
       this.applyNavBearingRotation(effectiveNavBearing);
+      this.applyWindRotation(effectiveWindDir);
+      this.applyWindScale(effectiveWindSpeed);
+      this.applyDisplayLineVisibility();
       if (this.planeMarker.options.opacity === 0) {
         this.planeMarker.setOpacity(1);
       }
@@ -358,13 +438,93 @@ export class MapComponent implements OnDestroy {
       return;
     }
 
-    layer.style.visibility = 'visible';
     const rotation = `rotate(${navBearingDeg}deg)`;
-    if (layer.style.transform === rotation) {
+    if (layer.style.transform !== rotation) {
+      layer.style.transform = rotation;
+    }
+
+    layer.style.visibility = this.displaySettings.displayTargetPath() ? 'visible' : 'hidden';
+  }
+
+  private applyWindRotation(windDirDeg: number | null): void {
+    const layer =
+      this.planeWindLayer ??
+      this.planeMarker?.getElement()?.querySelector('.plane-marker-icon__wind');
+    if (!(layer instanceof HTMLElement)) {
       return;
     }
 
-    layer.style.transform = rotation;
+    this.planeWindLayer = layer;
+
+    if (windDirDeg === null || !Number.isFinite(windDirDeg)) {
+      layer.style.visibility = 'hidden';
+      return;
+    }
+
+    const rotation = `rotate(${windDirDeg}deg)`;
+    if (layer.style.transform !== rotation) {
+      layer.style.transform = rotation;
+    }
+
+    const speed = this.lastAppliedWindSpeed;
+    const hasSpeed = speed !== null && Number.isFinite(speed) && speed > 0;
+    layer.style.visibility =
+      hasSpeed && this.displaySettings.displayWind() ? 'visible' : 'hidden';
+  }
+
+  private applyWindScale(windSpeedMS: number | null): void {
+    const line =
+      this.planeWindLine ??
+      this.planeMarker?.getElement()?.querySelector('.plane-marker-icon__wind-line');
+    const arrow =
+      this.planeWindArrow ??
+      this.planeMarker?.getElement()?.querySelector('.plane-marker-icon__wind-arrow');
+    if (!(line instanceof HTMLElement) || !(arrow instanceof HTMLElement)) {
+      return;
+    }
+
+    this.planeWindLine = line;
+    this.planeWindArrow = arrow;
+    applyWindLineGeometry(line, arrow, windSpeedMS);
+  }
+
+  private applyDisplayLineVisibility(): void {
+    const headingLine =
+      this.planeHeadingLine ??
+      this.planeMarker?.getElement()?.querySelector('.plane-marker-icon__heading-line');
+    if (headingLine instanceof HTMLElement) {
+      this.planeHeadingLine = headingLine;
+      headingLine.style.visibility = this.displaySettings.displayHeading()
+        ? 'visible'
+        : 'hidden';
+    }
+
+    const navLayer =
+      this.planeNavBearingLayer ??
+      this.planeMarker?.getElement()?.querySelector('.plane-marker-icon__nav-bearing');
+    if (navLayer instanceof HTMLElement) {
+      this.planeNavBearingLayer = navLayer;
+      const hasBearing =
+        this.lastAppliedNavBearing !== null && Number.isFinite(this.lastAppliedNavBearing);
+      navLayer.style.visibility =
+        hasBearing && this.displaySettings.displayTargetPath() ? 'visible' : 'hidden';
+    }
+
+    const windLayer =
+      this.planeWindLayer ??
+      this.planeMarker?.getElement()?.querySelector('.plane-marker-icon__wind');
+    if (windLayer instanceof HTMLElement) {
+      this.planeWindLayer = windLayer;
+      const speed = this.lastAppliedWindSpeed;
+      const hasWind =
+        this.lastAppliedWindDir !== null &&
+        Number.isFinite(this.lastAppliedWindDir) &&
+        speed !== null &&
+        Number.isFinite(speed) &&
+        speed > 0;
+      windLayer.style.visibility =
+        hasWind && this.displaySettings.displayWind() ? 'visible' : 'hidden';
+    }
   }
 
   private applyHomeMarker(
@@ -537,6 +697,14 @@ export class MapComponent implements OnDestroy {
 const PLANE_IMAGE_WIDTH = 40;
 const PLANE_IMAGE_HEIGHT = 46;
 const PLANE_HEADING_LINE_LENGTH = 100;
+/** Base wind line length in px (before speed scaling). */
+const WIND_LINE_BASE_PX = 40;
+/** Extra line length in px per 1 m/s wind. */
+const WIND_LINE_PX_PER_MS = 5;
+/** Fixed arrow tip height in px. */
+const WIND_ARROW_LENGTH_PX = 9;
+/** Half-width of the arrow tip base in px. */
+const WIND_ARROW_HALF_WIDTH_PX = 5;
 const PLANE_ANCHOR_X = PLANE_IMAGE_WIDTH / 2;
 const PLANE_ANCHOR_Y = PLANE_IMAGE_HEIGHT / 2;
 const PLANE_PADDING_TOP = PLANE_HEADING_LINE_LENGTH - PLANE_ANCHOR_Y;
@@ -549,14 +717,108 @@ function formatAltitudeMeters(altitudeM: number): string {
   return Number.isInteger(rounded) ? `${rounded} m` : `${rounded.toFixed(1)} m`;
 }
 
-function createPlaneIcon(yawDeg: number | null, navBearingDeg: number | null): L.DivIcon {
+function windLineLengthPx(windSpeedMS: number | null): number {
+  if (windSpeedMS === null || !Number.isFinite(windSpeedMS) || windSpeedMS <= 0) {
+    return 0;
+  }
+  return WIND_LINE_BASE_PX + windSpeedMS * WIND_LINE_PX_PER_MS;
+}
+
+function windArrowLengthPx(windSpeedMS: number | null): number {
+  if (windSpeedMS === null || !Number.isFinite(windSpeedMS) || windSpeedMS <= 0) {
+    return 0;
+  }
+  return WIND_ARROW_LENGTH_PX;
+}
+
+function applyWindLineGeometry(
+  line: HTMLElement,
+  arrow: HTMLElement,
+  windSpeedMS: number | null,
+): void {
+  const lineLength = windLineLengthPx(windSpeedMS);
+  const arrowLength = windArrowLengthPx(windSpeedMS);
+  const halfArrow = arrowLength > 0 ? WIND_ARROW_HALF_WIDTH_PX : 0;
+
+  line.style.top = `${PLANE_ICON_ANCHOR_Y - lineLength}px`;
+  line.style.height = `${lineLength}px`;
+  line.style.visibility = lineLength > 0 ? 'visible' : 'hidden';
+
+  arrow.style.top = `${PLANE_ICON_ANCHOR_Y - lineLength - arrowLength}px`;
+  arrow.style.marginLeft = `${-halfArrow}px`;
+  arrow.style.borderLeftWidth = `${halfArrow}px`;
+  arrow.style.borderRightWidth = `${halfArrow}px`;
+  arrow.style.borderBottomWidth = `${arrowLength}px`;
+  arrow.style.visibility = arrowLength > 0 ? 'visible' : 'hidden';
+}
+
+function createPlaneIcon(
+  yawDeg: number | null,
+  navBearingDeg: number | null,
+  windDirDeg: number | null,
+  windSpeedMS: number | null,
+): L.DivIcon {
   const root = document.createElement('div');
   root.className = 'plane-marker-icon__root';
   root.style.position = 'relative';
   root.style.width = `${PLANE_ICON_WIDTH}px`;
   root.style.height = `${PLANE_ICON_HEIGHT}px`;
+  root.style.overflow = 'visible';
 
   const transformOrigin = `${PLANE_ANCHOR_X}px ${PLANE_ICON_ANCHOR_Y}px`;
+
+  const windLayer = document.createElement('div');
+  windLayer.className = 'plane-marker-icon__wind';
+  windLayer.style.position = 'absolute';
+  windLayer.style.left = '0';
+  windLayer.style.top = '0';
+  windLayer.style.width = `${PLANE_ICON_WIDTH}px`;
+  windLayer.style.height = `${PLANE_ICON_HEIGHT}px`;
+  windLayer.style.transformOrigin = transformOrigin;
+  windLayer.style.pointerEvents = 'none';
+  windLayer.style.overflow = 'visible';
+
+  const windLine = document.createElement('div');
+  windLine.className = 'plane-marker-icon__wind-line';
+  windLine.setAttribute('aria-hidden', 'true');
+  windLine.style.position = 'absolute';
+  windLine.style.left = `${PLANE_ANCHOR_X}px`;
+  windLine.style.width = '2px';
+  windLine.style.marginLeft = '-1px';
+  windLine.style.background = '#006400';
+  windLine.style.pointerEvents = 'none';
+  windLayer.appendChild(windLine);
+
+  const windArrow = document.createElement('div');
+  windArrow.className = 'plane-marker-icon__wind-arrow';
+  windArrow.setAttribute('aria-hidden', 'true');
+  windArrow.style.position = 'absolute';
+  windArrow.style.left = `${PLANE_ANCHOR_X}px`;
+  windArrow.style.width = '0';
+  windArrow.style.height = '0';
+  windArrow.style.borderLeftStyle = 'solid';
+  windArrow.style.borderRightStyle = 'solid';
+  windArrow.style.borderBottomStyle = 'solid';
+  windArrow.style.borderLeftColor = 'transparent';
+  windArrow.style.borderRightColor = 'transparent';
+  windArrow.style.borderBottomColor = '#006400';
+  windArrow.style.pointerEvents = 'none';
+  windLayer.appendChild(windArrow);
+
+  applyWindLineGeometry(windLine, windArrow, windSpeedMS);
+
+  if (
+    windDirDeg !== null &&
+    Number.isFinite(windDirDeg) &&
+    windSpeedMS !== null &&
+    Number.isFinite(windSpeedMS) &&
+    windSpeedMS > 0
+  ) {
+    windLayer.style.transform = `rotate(${windDirDeg}deg)`;
+    windLayer.style.visibility = 'visible';
+  } else {
+    windLayer.style.visibility = 'hidden';
+  }
 
   const navLayer = document.createElement('div');
   navLayer.className = 'plane-marker-icon__nav-bearing';
@@ -628,6 +890,7 @@ function createPlaneIcon(yawDeg: number | null, navBearingDeg: number | null): L
     body.style.transform = `rotate(${yawDeg}deg)`;
   }
 
+  root.appendChild(windLayer);
   root.appendChild(navLayer);
   root.appendChild(body);
 

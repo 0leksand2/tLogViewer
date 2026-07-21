@@ -1,0 +1,30 @@
+<div class="map-settings">
+  <p class="map-settings__title">Map display</p>
+
+  <label class="map-settings__option">
+    <input
+      type="checkbox"
+      [checked]="draftHeading()"
+      (change)="onDisplayHeadingChange($any($event.target).checked)"
+    />
+    <span>Display heading</span>
+  </label>
+
+  <label class="map-settings__option">
+    <input
+      type="checkbox"
+      [checked]="draftTargetPath()"
+      (change)="onDisplayTargetPathChange($any($event.target).checked)"
+    />
+    <span>Display target path</span>
+  </label>
+
+  <label class="map-settings__option">
+    <input
+      type="checkbox"
+      [checked]="draftWind()"
+      (change)="onDisplayWindChange($any($event.target).checked)"
+    />
+    <span>Display wind</span>
+  </label>
+</div>

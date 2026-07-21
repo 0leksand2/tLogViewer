@@ -32,6 +32,10 @@ import {
   sortedPlaybackPoints,
   ensureDerivedPlaybackValues,
 } from './flight-player/utils/playback-timeline';
+import {
+  MapDisplaySettings,
+  MapDisplaySettingsService,
+} from './map/services/map-display-settings.service';
 import { CurrentValue } from './core/services/current.value';
 
 @Component({
@@ -53,10 +57,15 @@ export class App {
   private readonly selectedPropertiesStorage = inject(SelectedTelemetryPropertiesStorage);
   private readonly tlogService = inject(TlogService);
   private readonly currentValue = inject(CurrentValue);
+  private readonly mapDisplaySettings = inject(MapDisplaySettingsService);
   private readonly flightSelection$ = new Subject<{ sessionId: string; flightId: string } | null>();
 
   protected readonly menuOpen = signal(true);
   protected readonly propertiesModalOpen = signal(false);
+  protected readonly settingsModalOpen = signal(false);
+  protected readonly displayHeading = this.mapDisplaySettings.displayHeading;
+  protected readonly displayTargetPath = this.mapDisplaySettings.displayTargetPath;
+  protected readonly displayWind = this.mapDisplaySettings.displayWind;
   protected readonly selectedProperties = signal<MissionPlannerProperty[]>(
     this.selectedPropertiesStorage.load(),
   );
@@ -174,6 +183,8 @@ export class App {
           plane.yaw,
           flight?.id ?? null,
           plane.navBearing,
+          plane.windDir,
+          plane.windSpeed,
         );
       }
 
@@ -236,6 +247,10 @@ export class App {
     this.propertiesModalOpen.set(true);
   }
 
+  protected openSettingsModal(): void {
+    this.settingsModalOpen.set(true);
+  }
+
   protected onPropertiesSaved(result: ModalCloseResult): void {
     const value = result.value as MissionPlannerProperty[] | undefined;
     if (value) {
@@ -249,6 +264,20 @@ export class App {
 
   protected onPropertiesCancelled(): void {
     // Selection is reset when the modal content is recreated on next open.
+  }
+
+  protected onSettingsSaved(result: ModalCloseResult): void {
+    const value = result.value as MapDisplaySettings | undefined;
+    if (!value) {
+      return;
+    }
+    this.mapDisplaySettings.setDisplayHeading(value.displayHeading);
+    this.mapDisplaySettings.setDisplayTargetPath(value.displayTargetPath);
+    this.mapDisplaySettings.setDisplayWind(value.displayWind);
+  }
+
+  protected onSettingsCancelled(): void {
+    // Draft is discarded when the modal content is recreated on next open.
   }
 
   protected onTlogUploaded(result: TlogUploadResult): void {

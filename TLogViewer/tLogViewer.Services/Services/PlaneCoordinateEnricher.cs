@@ -1,9 +1,9 @@
 namespace tLogViewer.Services.Services;
 
 /// <summary>
-/// Adds <c>lat</c> / <c>lon</c>, <c>yaw</c>, and target fields to each flight millisecond.
+/// Adds <c>lat</c> / <c>lon</c>, <c>yaw</c>, <c>windDir</c>, and target fields to each flight millisecond.
 /// Plane position from messages that change over time; yaw from VFR_HUD heading (message 74).
-/// Absolute target from POSITION_TARGET_GLOBAL_INT (87); otherwise derived from
+/// Wind direction from WIND (168). Absolute target from POSITION_TARGET_GLOBAL_INT (87); otherwise derived from
 /// NAV_CONTROLLER_OUTPUT (62) target bearing + waypoint distance.
 /// </summary>
 public static class PlaneCoordinateEnricher
@@ -18,6 +18,8 @@ public static class PlaneCoordinateEnricher
     private const string NavTargetBearingKey = "62_targetBearing";
     private const string NavBearingKey = "62_navBearing";
     private const string NavWpDistKey = "62_wpDistM";
+    private const string WindDirectionKey = "168_directionDeg";
+    private const string WindSpeedKey = "168_speedMS";
     private const double EarthRadiusM = 6_371_000;
 
     /// <summary>Lower = preferred vehicle position source.</summary>
@@ -55,6 +57,8 @@ public static class PlaneCoordinateEnricher
         double? lastNavTargetBearing = null;
         double? lastNavBearing = null;
         double? lastNavWpDistM = null;
+        double? lastWindDir = null;
+        double? lastWindSpeed = null;
         var hasAbsoluteTarget = false;
 
         string? latKey = null;
@@ -119,6 +123,19 @@ public static class PlaneCoordinateEnricher
                 lastNavWpDistM = dist;
             }
 
+            if (atMs.TryGetValue(WindDirectionKey, out var windDirObj)
+                && TryAsDouble(windDirObj, out var windDir))
+            {
+                lastWindDir = NormalizeHeading(windDir);
+            }
+
+            if (atMs.TryGetValue(WindSpeedKey, out var windSpeedObj)
+                && TryAsDouble(windSpeedObj, out var windSpeed)
+                && windSpeed >= 0)
+            {
+                lastWindSpeed = windSpeed;
+            }
+
             if (!hasAbsoluteTarget
                 && lastLat.HasValue
                 && lastLon.HasValue
@@ -175,6 +192,16 @@ public static class PlaneCoordinateEnricher
             if (lastNavWpDistM.HasValue)
             {
                 atMs["wpDistM"] = lastNavWpDistM.Value;
+            }
+
+            if (lastWindDir.HasValue)
+            {
+                atMs["windDir"] = lastWindDir.Value;
+            }
+
+            if (lastWindSpeed.HasValue)
+            {
+                atMs["windSpeed"] = lastWindSpeed.Value;
             }
         }
     }
