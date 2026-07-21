@@ -19,6 +19,8 @@ namespace tLogViewer.Core.Models.Messages
 
         public double LatitudeDeg;
         public double LongitudeDeg;
+        public double YawDeg;
+        public double YawRateDegS;
 
         public override int ExpectedLength => 51;
 
@@ -41,11 +43,14 @@ namespace tLogViewer.Core.Models.Messages
 
             LatitudeDeg = LatInt / 1e7;
             LongitudeDeg = LonInt / 1e7;
+            YawDeg = Yaw * 180.0 / Math.PI;
+            YawRateDegS = YawRate * 180.0 / Math.PI;
         }
 
         public override void Print()
         {
-            Console.WriteLine($"PositionTargetGlobalInt: Lat={LatitudeDeg:F7}, Lon={LongitudeDeg:F7}, Alt={Alt:F1}, Frame={CoordinateFrame}");
+            Console.WriteLine(
+                $"PositionTargetGlobalInt: Lat={LatitudeDeg:F7}, Lon={LongitudeDeg:F7}, Alt={Alt:F1}, Yaw={YawDeg:F1}, Frame={CoordinateFrame}");
         }
     }
 }

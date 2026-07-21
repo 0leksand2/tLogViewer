@@ -28,7 +28,9 @@ import {
   resolveFlightHomePoints,
   resolvePlanePosition,
   resolvePlaybackPoint,
+  resolvePositionTarget,
   sortedPlaybackPoints,
+  ensureDerivedPlaybackValues,
 } from './flight-player/utils/playback-timeline';
 import { CurrentValue } from './core/services/current.value';
 
@@ -106,12 +108,16 @@ export class App {
 
     effect(() => {
       const flight = this.loadedFlight();
-      const millisecond = resolvePlaybackPoint(
-        this.playbackPoints(),
-        this.flightProgressPercent(),
-      );
-      const values =
+      const points = this.playbackPoints();
+      const millisecond = resolvePlaybackPoint(points, this.flightProgressPercent());
+      const rawValues =
         millisecond !== null && flight ? (flight.messages[String(millisecond)] ?? {}) : {};
+      const values = ensureDerivedPlaybackValues(
+        flight?.messages,
+        points,
+        millisecond,
+        rawValues,
+      );
       this.currentValue.set(millisecond, values, flight?.id ?? null);
     });
 
@@ -134,9 +140,13 @@ export class App {
         return;
       }
 
-      map.setHomeLocation(home.latitudeDeg, home.longitudeDeg, flight?.id ?? null, {
-        recenter: true,
-      });
+      map.setHomeLocation(
+        home.latitudeDeg,
+        home.longitudeDeg,
+        flight?.id ?? null,
+        { recenter: true },
+        home.altitudeM,
+      );
     });
 
     effect(() => {
@@ -146,6 +156,9 @@ export class App {
         this.flightProgressPercent(),
       );
       const plane = resolvePlanePosition(flight?.messages, playbackMs);
+      const target = resolvePositionTarget(flight?.messages, playbackMs);
+      const homePoints = resolveFlightHomePoints(flight?.homePoints, flight?.messages);
+      const home = resolveActiveHomePoint(homePoints, playbackMs);
       const map = this.map();
 
       if (!map) {
@@ -154,10 +167,25 @@ export class App {
 
       if (!plane) {
         map.setPlaneLocation(null, null);
-        return;
+      } else {
+        map.setPlaneLocation(
+          plane.lat,
+          plane.lon,
+          plane.yaw,
+          flight?.id ?? null,
+          plane.navBearing,
+        );
       }
 
-      map.setPlaneLocation(plane.lat, plane.lon, plane.yaw, flight?.id ?? null);
+      if (!target) {
+        map.setTargetLocation(null, null);
+      } else {
+        const relativeAlt =
+          target.altitudeM != null && home?.altitudeM != null
+            ? target.altitudeM - home.altitudeM
+            : null;
+        map.setTargetLocation(target.lat, target.lon, relativeAlt);
+      }
     });
 
     effect(() => {

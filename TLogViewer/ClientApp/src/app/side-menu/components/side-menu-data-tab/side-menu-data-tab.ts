@@ -31,7 +31,7 @@ export class SideMenuDataTabComponent {
       .map((property) => ({
         key: property.key,
         name: property.label ?? property.key,
-        value: this.formatValue(values[property.propertyValue]),
+        value: this.formatValue(values[property.propertyValue], property.key),
         property,
       }));
   });
@@ -71,7 +71,10 @@ export class SideMenuDataTabComponent {
     this.propertiesReordered.emit(withOrder);
   }
 
-  private formatValue(value: unknown): string {
+  private formatValue(value: unknown, key: string): string {
+    if (key === 'timeInAirMinSec') {
+      return this.formatMinSec(value);
+    }
     if (value === null || value === undefined || value === '') {
       return '0.0';
     }
@@ -85,5 +88,18 @@ export class SideMenuDataTabComponent {
       return value;
     }
     return String(value);
+  }
+
+  /** Seconds → `m:ss` (e.g. 125.4 → `2:05`). */
+  private formatMinSec(value: unknown): string {
+    const seconds = typeof value === 'number' ? value : Number(value);
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+      return '0:00';
+    }
+
+    const total = Math.floor(seconds);
+    const minutes = Math.floor(total / 60);
+    const secs = total % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   }
 }

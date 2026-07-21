@@ -31,7 +31,13 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
         }
 
         var heartbeats = VehicleHeartbeatSelector.SelectFromMessages(messages);
-        var flightIntervals = FlightSplitIntervalFinder.Find(heartbeats, logStart, logEnd, margin);
+        var homeTimes = HomePositionTimeFinder.FindFromMessages(messages);
+        var flightIntervals = FlightSplitIntervalFinder.Find(
+            heartbeats,
+            homeTimes,
+            logStart,
+            logEnd,
+            margin);
 
         if (flightIntervals.Count == 0)
         {
@@ -68,8 +74,13 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
             }
 
             PlaneCoordinateEnricher.Enrich(byMillisecond);
+            DerivedFieldsEnricher.ForwardFill(byMillisecond);
 
-            var homePoints = ExtractHomePoints(messages, start, end);
+            var homePoints = ExtractHomePoints(byMillisecond);
+            if (homePoints.Count == 0)
+            {
+                homePoints = ExtractHomePoints(messages, start, end);
+            }
 
             flights.Add(new FlightDto
             {
@@ -113,6 +124,45 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
         }
     }
 
+    /// <summary>
+    /// Builds home points from flattened <c>242_*</c> fields already placed in the flight buckets.
+    /// </summary>
+    private static List<FlightHomePoint> ExtractHomePoints(
+        Dictionary<long, Dictionary<string, object>> byMillisecond)
+    {
+        var points = new List<FlightHomePoint>();
+        double? lastLat = null;
+        double? lastLng = null;
+
+        foreach (var ms in byMillisecond.Keys.OrderBy(static key => key))
+        {
+            var fields = byMillisecond[ms];
+            if (!TryReadHomeCoordinate(fields, out var latitudeDeg, out var longitudeDeg, out var altitudeM))
+            {
+                continue;
+            }
+
+            if (lastLat.HasValue && lastLng.HasValue
+                && CoordinatesEqual(latitudeDeg, longitudeDeg, lastLat.Value, lastLng.Value))
+            {
+                continue;
+            }
+
+            points.Add(new FlightHomePoint
+            {
+                ChangedAtMs = ms,
+                LatitudeDeg = latitudeDeg,
+                LongitudeDeg = longitudeDeg,
+                AltitudeM = altitudeM
+            });
+
+            lastLat = latitudeDeg;
+            lastLng = longitudeDeg;
+        }
+
+        return points;
+    }
+
     private static List<FlightHomePoint> ExtractHomePoints(
         IReadOnlyList<MavMessageDto> messages,
         DateTimeOffset start,
@@ -124,7 +174,7 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
 
         foreach (var message in messages)
         {
-            if (message.Data is not HomePositionData home)
+            if (!TryGetHomePositionData(message, out var home))
             {
                 continue;
             }
@@ -159,6 +209,77 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
         }
 
         return points;
+    }
+
+    private static bool TryGetHomePositionData(MavMessageDto message, out HomePositionData home)
+    {
+        if (message.Data is HomePositionData typed)
+        {
+            home = typed;
+            return true;
+        }
+
+        home = null!;
+        return false;
+    }
+
+    private static bool TryReadHomeCoordinate(
+        IReadOnlyDictionary<string, object> fields,
+        out double latitudeDeg,
+        out double longitudeDeg,
+        out double altitudeM)
+    {
+        latitudeDeg = 0;
+        longitudeDeg = 0;
+        altitudeM = 0;
+
+        if (!fields.TryGetValue("242_latitudeDeg", out var latObj)
+            || !fields.TryGetValue("242_longitudeDeg", out var lonObj))
+        {
+            return false;
+        }
+
+        if (!TryAsDouble(latObj, out latitudeDeg) || !TryAsDouble(lonObj, out longitudeDeg))
+        {
+            return false;
+        }
+
+        if (IsInvalidCoordinate(latitudeDeg, longitudeDeg))
+        {
+            return false;
+        }
+
+        if (fields.TryGetValue("242_altitudeM", out var altObj))
+        {
+            TryAsDouble(altObj, out altitudeM);
+        }
+
+        return true;
+    }
+
+    private static bool TryAsDouble(object value, out double result)
+    {
+        switch (value)
+        {
+            case double d:
+                result = d;
+                return true;
+            case float f:
+                result = f;
+                return true;
+            case int i:
+                result = i;
+                return true;
+            case long l:
+                result = l;
+                return true;
+            case decimal m:
+                result = (double)m;
+                return true;
+            default:
+                result = 0;
+                return false;
+        }
     }
 
     private static (DateTimeOffset From, DateTimeOffset Until) FindArmedWindow(

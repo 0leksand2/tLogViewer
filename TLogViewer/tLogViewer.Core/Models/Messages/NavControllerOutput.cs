@@ -27,7 +27,8 @@ namespace tLogViewer.Core.Models.Messages
 
         public override void Print()
         {
-            Console.WriteLine($"NavControllerOutput: WpDist={WpDist}m, TargetBearing={TargetBearing}, AltError={AltError:F1}, XtrackError={XtrackError:F1}");
+            Console.WriteLine(
+                $"NavControllerOutput: WpDist={WpDist}m, TargetBearing={TargetBearing}, NavBearing={NavBearing}, AltError={AltError:F1}, XtrackError={XtrackError:F1}");
         }
     }
 }

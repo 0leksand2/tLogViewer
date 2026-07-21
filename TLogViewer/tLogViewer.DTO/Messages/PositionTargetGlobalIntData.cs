@@ -9,8 +9,13 @@ public sealed class PositionTargetGlobalIntData
     public float Vx { get; init; }
     public float Vy { get; init; }
     public float Vz { get; init; }
+    public float Afx { get; init; }
+    public float Afy { get; init; }
+    public float Afz { get; init; }
     public float Yaw { get; init; }
+    public double YawDeg { get; init; }
     public float YawRate { get; init; }
+    public double YawRateDegS { get; init; }
     public ushort TypeMask { get; init; }
     public byte CoordinateFrame { get; init; }
 }

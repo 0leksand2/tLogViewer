@@ -1,4 +1,5 @@
 using tLogViewer.Core.Models;
+using tLogViewer.Core.Models.Messages;
 using tLogViewer.Reader.Services;
 
 using tLogViewer.Services.Interfaces;
@@ -36,11 +37,13 @@ public sealed class TlogProcessingService : ITlogProcessingService
         try
         {
             var messages = new List<MavMessageDto>();
+            var derived = new DerivedMessageCalculator();
             var totalRecords = 0;
 
             foreach (var record in LogReader.ReadTLog(readable))
             {
                 totalRecords++;
+                derived.ObservePacket(record);
 
                 var parsed = MessageProcessingFactory.ParseMessage(record.MavPacket);
                 if (parsed is null)
@@ -48,8 +51,15 @@ public sealed class TlogProcessingService : ITlogProcessingService
                     continue;
                 }
 
+                if (parsed is Heartbeat heartbeat)
+                {
+                    derived.ObserveHeartbeat(record, heartbeat);
+                }
+
                 messages.Add(MavMessageMapper.ToDto(parsed, record.Trail));
             }
+
+            messages.AddRange(derived.TakeSamples());
 
             var flights = _analytics.SplitIntoFlights(messages);
 

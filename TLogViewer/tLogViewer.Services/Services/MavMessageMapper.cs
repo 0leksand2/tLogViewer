@@ -154,8 +154,13 @@ public static class MavMessageMapper
                 Vx = m.Vx,
                 Vy = m.Vy,
                 Vz = m.Vz,
+                Afx = m.Afx,
+                Afy = m.Afy,
+                Afz = m.Afz,
                 Yaw = m.Yaw,
+                YawDeg = m.YawDeg,
                 YawRate = m.YawRate,
+                YawRateDegS = m.YawRateDegS,
                 TypeMask = m.TypeMask,
                 CoordinateFrame = m.CoordinateFrame
             }),
@@ -167,6 +172,22 @@ public static class MavMessageMapper
                 X = m.X,
                 Y = m.Y,
                 Z = m.Z
+            }),
+            Wind m => Envelope("wind", messageId, timeUtc, new WindData
+            {
+                DirectionDeg = m.DirectionDeg,
+                SpeedMS = m.SpeedMS,
+                SpeedZMS = m.SpeedZMS
+            }),
+            Radio m => Envelope("radio", messageId, timeUtc, new RadioData
+            {
+                Rssi = m.Rssi,
+                RemRssi = m.RemRssi,
+                TxBufPct = m.TxBufPct,
+                Noise = m.Noise,
+                RemNoise = m.RemNoise,
+                RxErrors = m.RxErrors,
+                Fixed = m.Fixed
             }),
             _ => Envelope("unknown", messageId, timeUtc, new { })
         };

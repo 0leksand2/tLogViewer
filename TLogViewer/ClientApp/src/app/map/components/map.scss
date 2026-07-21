@@ -57,15 +57,34 @@
 :host ::ng-deep .plane-marker-icon {
   background: transparent;
   border: none;
-}
-
-:host ::ng-deep .plane-marker-icon__body {
-  position: relative;
+  pointer-events: none !important;
 }
 
 :host ::ng-deep .home-marker-icon {
   background: transparent;
   border: none;
+  pointer-events: auto !important;
+  cursor: default;
+}
+
+:host ::ng-deep .target-marker-icon {
+  background: transparent;
+  border: none;
+  pointer-events: auto !important;
+  cursor: default;
+}
+
+:host ::ng-deep .home-marker-tooltip,
+:host ::ng-deep .target-marker-tooltip {
+  padding: 0.25rem 0.45rem;
+  border: 1px solid rgb(0 0 0 / 15%);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 20%);
+  color: #1a1d24;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 :host ::ng-deep .home-marker-icon__badge {

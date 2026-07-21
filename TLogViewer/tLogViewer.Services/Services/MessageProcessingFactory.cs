@@ -45,6 +45,11 @@ public static class MessageProcessingFactory
                 return new VfrHud(packet);
             case MavMessageTypeId.POSITION_TARGET_GLOBAL_INT:
                 return new PositionTargetGlobalInt(packet);
+            case MavMessageTypeId.RADIO_STATUS:
+            case MavMessageTypeId.RADIO:
+                return new Radio(packet);
+            case MavMessageTypeId.WIND:
+                return new Wind(packet);
             case MavMessageTypeId.HOME_POSITION:
                 return new HomePosition(packet);
             default:
@@ -68,6 +73,9 @@ public static class MessageProcessingFactory
         MavMessageTypeId.MISSION_ITEM_INT => 38,
         MavMessageTypeId.VFR_HUD => 20,
         MavMessageTypeId.POSITION_TARGET_GLOBAL_INT => 51,
+        MavMessageTypeId.RADIO_STATUS => 9,
+        MavMessageTypeId.RADIO => 9,
+        MavMessageTypeId.WIND => 12,
         MavMessageTypeId.HOME_POSITION => 60,
         _ => int.MaxValue
     };

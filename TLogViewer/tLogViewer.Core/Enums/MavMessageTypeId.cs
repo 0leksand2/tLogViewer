@@ -16,7 +16,12 @@
         MISSION_ITEM_INT = 73,
         VFR_HUD = 74,
         POSITION_TARGET_GLOBAL_INT = 87,
+        RADIO_STATUS = 109,
         BATTERY_STATUS = 147,
-        HOME_POSITION = 242
+        RADIO = 166,
+        WIND = 168,
+        HOME_POSITION = 242,
+        /// <summary>Synthetic derived telemetry (not a wire MAVLink id).</summary>
+        DERIVED = 998
     }
 }

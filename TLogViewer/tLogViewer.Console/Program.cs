@@ -44,8 +44,20 @@ static void AnalyzeAndSplitFile(string sourcePath, TimeSpan margin)
         heartbeats.Select(static s => (s.Time, s.SystemStatus)));
     var armedIntervals = ArmedIntervalFinder.Find(
         heartbeats.Select(static s => (s.Time, s.Armed)));
+    var homeTimes = HomePositionTimeFinder.FindFromRecords(records);
 
     Console.WriteLine($"Heartbeats (vehicle): {heartbeats.Count}");
+    Console.WriteLine($"HOME_POSITION messages: {homeTimes.Count}");
+    foreach (var home in homeTimes.Take(20))
+    {
+        Console.WriteLine($"  {home:u}");
+    }
+
+    if (homeTimes.Count > 20)
+    {
+        Console.WriteLine($"  ... and {homeTimes.Count - 20} more");
+    }
+
     Console.WriteLine($"Power-up events: {powerUps.Count}");
     foreach (var powerUp in powerUps)
     {
@@ -68,7 +80,12 @@ static void AnalyzeAndSplitFile(string sourcePath, TimeSpan margin)
         Console.WriteLine($"  {line}");
     }
 
-    var flightIntervals = FlightSplitIntervalFinder.Find(heartbeats, logStart, logEnd, margin);
+    var flightIntervals = FlightSplitIntervalFinder.Find(
+        heartbeats,
+        homeTimes,
+        logStart,
+        logEnd,
+        margin);
 
     Console.WriteLine($"Flight intervals: {flightIntervals.Count}");
     foreach (var (from, until) in flightIntervals)

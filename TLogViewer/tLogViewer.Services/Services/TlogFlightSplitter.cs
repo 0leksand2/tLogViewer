@@ -56,9 +56,15 @@ public sealed class TlogFlightSplitter
         var logEndUs = records[^1].Trail;
 
         var heartbeats = VehicleHeartbeatSelector.SelectVehicleHeartbeats(records);
+        var homeTimes = HomePositionTimeFinder.FindFromRecords(records);
         var logStartUtc = ArmedIntervalFinder.TrailToUtc(logStartUs);
         var logEndUtc = ArmedIntervalFinder.TrailToUtc(logEndUs);
-        var flightIntervals = FlightSplitIntervalFinder.Find(heartbeats, logStartUtc, logEndUtc, margin);
+        var flightIntervals = FlightSplitIntervalFinder.Find(
+            heartbeats,
+            homeTimes,
+            logStartUtc,
+            logEndUtc,
+            margin);
 
         if (flightIntervals.Count == 0)
         {
