@@ -53,3 +53,34 @@
     border-bottom-right-radius: var(--menu-control-radius, 6px);
   }
 }
+
+:host ::ng-deep .plane-marker-icon {
+  background: transparent;
+  border: none;
+}
+
+:host ::ng-deep .plane-marker-icon__body {
+  position: relative;
+}
+
+:host ::ng-deep .home-marker-icon {
+  background: transparent;
+  border: none;
+}
+
+:host ::ng-deep .home-marker-icon__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--color-primary, #5d05f5);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 800;
+  line-height: 1;
+  font-family: inherit;
+}

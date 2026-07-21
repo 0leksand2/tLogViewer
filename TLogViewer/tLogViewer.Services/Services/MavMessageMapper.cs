@@ -5,7 +5,7 @@ using tLogViewer.Core.Models.Messages;
 using tLogViewer.Core.Models.Messages.RcChannelsMessage;
 using tLogViewer.DTO.Messages;
 
-namespace tLogViewer.Services;
+namespace tLogViewer.Services.Services;
 
 public static class MavMessageMapper
 {

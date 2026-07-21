@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
 using tLogViewer.Core.Models;
 
-namespace tLogViewer.Services;
+using tLogViewer.Services.Interfaces;
+
+namespace tLogViewer.Services.Services;
 
 public sealed class TlogSessionStore : ITlogSessionStore
 {

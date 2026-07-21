@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using tLogViewer.Core.Models;
-using tLogViewer.Services;
+using tLogViewer.Services.Interfaces;
 
 namespace TLogViewer.Web.Controllers;
 

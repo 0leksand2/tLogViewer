@@ -24,6 +24,9 @@ import {
 import { SelectedTelemetryPropertiesStorage } from './mission-planner-properties/services/selected-telemetry-properties-storage.service';
 import { FlightPlayerModule } from './flight-player/flight-player.module';
 import {
+  resolveActiveHomePoint,
+  resolveFlightHomePoints,
+  resolvePlanePosition,
   resolvePlaybackPoint,
   sortedPlaybackPoints,
 } from './flight-player/utils/playback-timeline';
@@ -113,6 +116,51 @@ export class App {
     });
 
     effect(() => {
+      const flight = this.loadedFlight();
+      const playbackMs = resolvePlaybackPoint(
+        this.playbackPoints(),
+        this.flightProgressPercent(),
+      );
+      const homePoints = resolveFlightHomePoints(flight?.homePoints, flight?.messages);
+      const home = resolveActiveHomePoint(homePoints, playbackMs);
+      const map = this.map();
+
+      if (!map) {
+        return;
+      }
+
+      if (!home) {
+        map.setHomeLocation(null, null);
+        return;
+      }
+
+      map.setHomeLocation(home.latitudeDeg, home.longitudeDeg, flight?.id ?? null, {
+        recenter: true,
+      });
+    });
+
+    effect(() => {
+      const flight = this.loadedFlight();
+      const playbackMs = resolvePlaybackPoint(
+        this.playbackPoints(),
+        this.flightProgressPercent(),
+      );
+      const plane = resolvePlanePosition(flight?.messages, playbackMs);
+      const map = this.map();
+
+      if (!map) {
+        return;
+      }
+
+      if (!plane) {
+        map.setPlaneLocation(null, null);
+        return;
+      }
+
+      map.setPlaneLocation(plane.lat, plane.lon, plane.yaw, flight?.id ?? null);
+    });
+
+    effect(() => {
       const sessionId = this.sessionId();
       const flightId = this.selectedFlightId();
       this.flightProgressPercent.set(0);
@@ -140,9 +188,19 @@ export class App {
         takeUntilDestroyed(),
       )
       .subscribe((result: TlogFlightResult | null) => {
-        this.loadedFlight.set(result?.flight ?? null);
+        const flight = result?.flight ?? null;
+        this.loadedFlight.set(flight);
         this.flightProgressPercent.set(0);
         this.flightPlaying.set(false);
+
+        if (flight) {
+          const homePoints = resolveFlightHomePoints(flight.homePoints, flight.messages);
+          console.log('Flight home points', {
+            flightId: flight.id,
+            fromApi: flight.homePoints,
+            resolved: homePoints,
+          });
+        }
       });
   }
 

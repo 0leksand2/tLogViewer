@@ -1,12 +1,12 @@
 using tLogViewer.Core.Models;
 
-namespace tLogViewer.Services;
+namespace tLogViewer.Services.Interfaces;
 
 public interface ILogAnalyticsService
 {
     /// <summary>
-    /// Splits parsed messages into flights based on Heartbeat SafetyArmed transitions.
-    /// Each flight is trimmed by <paramref name="trimSeconds"/> before arm and after disarm.
+    /// Prefers power-up (heartbeat UNINIT/BOOT); falls back to armed/disarmed when no boot markers exist.
+    /// Each flight is trimmed by <paramref name="trimSeconds"/> at segment boundaries.
     /// </summary>
     IReadOnlyList<FlightDto> SplitIntoFlights(
         IReadOnlyList<MavMessageDto> messages,

@@ -1,7 +1,7 @@
 using tLogViewer.Core.Models;
 using tLogViewer.Reader.Services;
 
-namespace tLogViewer.Services;
+namespace tLogViewer.Services.Services;
 
 public class LogProcessor
 {

@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Http.Features;
+using tLogViewer.Services.Interfaces;
+using tLogViewer.Services.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddSingleton<tLogViewer.Services.ILogAnalyticsService, tLogViewer.Services.LogAnalyticsService>();
-builder.Services.AddSingleton<tLogViewer.Services.ITlogProcessingService, tLogViewer.Services.TlogProcessingService>();
-builder.Services.AddSingleton<tLogViewer.Services.ITlogSessionStore, tLogViewer.Services.TlogSessionStore>();
+builder.Services.AddSingleton<ILogAnalyticsService, LogAnalyticsService>();
+builder.Services.AddSingleton<ITlogProcessingService, TlogProcessingService>();
+builder.Services.AddSingleton<ITlogSessionStore, TlogSessionStore>();
 builder.Services.AddHostedService<TLogViewer.Web.TlogSessionCleanupService>();
 builder.Services.Configure<FormOptions>(options =>
 {

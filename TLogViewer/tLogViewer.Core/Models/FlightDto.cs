@@ -1,6 +1,6 @@
 namespace tLogViewer.Core.Models;
 
-/// <summary>One armed segment with messages indexed by Unix millisecond.</summary>
+/// <summary>One power-cycle segment with messages indexed by Unix millisecond.</summary>
 public sealed class FlightDto
 {
     public Guid Id { get; init; }
@@ -16,4 +16,7 @@ public sealed class FlightDto
     /// Inner key: <c>{messageId}_{valueName}</c> (e.g. <c>0_armed</c>); value: field value.
     /// </summary>
     public required IReadOnlyDictionary<long, IReadOnlyDictionary<string, object>> Messages { get; init; }
+
+    /// <summary>Unique home coordinates and the millisecond each became active.</summary>
+    public required IReadOnlyList<FlightHomePoint> HomePoints { get; init; }
 }

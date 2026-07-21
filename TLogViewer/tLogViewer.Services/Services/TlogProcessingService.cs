@@ -1,7 +1,9 @@
 using tLogViewer.Core.Models;
 using tLogViewer.Reader.Services;
 
-namespace tLogViewer.Services;
+using tLogViewer.Services.Interfaces;
+
+namespace tLogViewer.Services.Services;
 
 public sealed class TlogProcessingService : ITlogProcessingService
 {

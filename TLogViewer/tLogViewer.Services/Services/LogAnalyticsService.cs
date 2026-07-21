@@ -2,8 +2,9 @@ using System.Reflection;
 using System.Text.Json;
 using tLogViewer.Core.Models;
 using tLogViewer.DTO.Messages;
+using tLogViewer.Services.Interfaces;
 
-namespace tLogViewer.Services;
+namespace tLogViewer.Services.Services;
 
 public sealed class LogAnalyticsService : ILogAnalyticsService
 {
@@ -19,12 +20,6 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
         }
 
         var margin = TimeSpan.FromSeconds(Math.Max(0, trimSeconds));
-        var armedIntervals = FindArmedIntervals(messages);
-
-        if (armedIntervals.Count == 0)
-        {
-            return Array.Empty<FlightDto>();
-        }
 
         var logStart = DateTimeOffset.MaxValue;
         var logEnd = DateTimeOffset.MinValue;
@@ -35,18 +30,20 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
             if (t > logEnd) logEnd = t;
         }
 
-        var flights = new List<FlightDto>(armedIntervals.Count);
+        var heartbeats = VehicleHeartbeatSelector.SelectFromMessages(messages);
+        var flightIntervals = FlightSplitIntervalFinder.Find(heartbeats, logStart, logEnd, margin);
 
-        for (var i = 0; i < armedIntervals.Count; i++)
+        if (flightIntervals.Count == 0)
         {
-            var (armedFrom, armedUntil) = armedIntervals[i];
-            var start = Clamp(armedFrom - margin, logStart, logEnd);
-            var end = Clamp(armedUntil + margin, logStart, logEnd);
+            return Array.Empty<FlightDto>();
+        }
 
-            if (start > end)
-            {
-                (start, end) = (end, start);
-            }
+        var flights = new List<FlightDto>(flightIntervals.Count);
+
+        for (var i = 0; i < flightIntervals.Count; i++)
+        {
+            var (start, end) = flightIntervals[i];
+            var armedWindow = FindArmedWindow(heartbeats, start, end);
 
             var byMillisecond = new Dictionary<long, Dictionary<string, object>>();
             var messageCount = 0;
@@ -70,18 +67,23 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
                 messageCount++;
             }
 
+            PlaneCoordinateEnricher.Enrich(byMillisecond);
+
+            var homePoints = ExtractHomePoints(messages, start, end);
+
             flights.Add(new FlightDto
             {
                 Id = Guid.NewGuid(),
                 StartTimeUtc = Format(start),
                 EndTimeUtc = Format(end),
-                ArmedFromTimeUtc = Format(armedFrom),
-                ArmedUntilTimeUtc = Format(armedUntil),
+                ArmedFromTimeUtc = Format(armedWindow.From),
+                ArmedUntilTimeUtc = Format(armedWindow.Until),
                 DurationSeconds = (end - start).TotalSeconds,
                 MessageCount = messageCount,
                 Messages = byMillisecond.ToDictionary(
                     static pair => pair.Key,
-                    static pair => (IReadOnlyDictionary<string, object>)pair.Value)
+                    static pair => (IReadOnlyDictionary<string, object>)pair.Value),
+                HomePoints = homePoints
             });
         }
 
@@ -111,50 +113,85 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
         }
     }
 
-    private static List<(DateTimeOffset ArmedFrom, DateTimeOffset ArmedUntil)> FindArmedIntervals(
-        IReadOnlyList<MavMessageDto> messages)
+    private static List<FlightHomePoint> ExtractHomePoints(
+        IReadOnlyList<MavMessageDto> messages,
+        DateTimeOffset start,
+        DateTimeOffset end)
     {
-        var intervals = new List<(DateTimeOffset, DateTimeOffset)>();
-        bool? wasArmed = null;
-        DateTimeOffset? armedFrom = null;
+        var points = new List<FlightHomePoint>();
+        double? lastLat = null;
+        double? lastLng = null;
 
         foreach (var message in messages)
         {
-            if (message.Type != "heartbeat" || message.Data is not HeartbeatData heartbeat)
+            if (message.Data is not HomePositionData home)
             {
                 continue;
             }
 
             var time = TlogTime.ParseUtc(message.TimeUtc);
-
-            if (wasArmed != true && heartbeat.Armed)
+            if (time < start || time > end)
             {
-                armedFrom = time;
-            }
-            else if (wasArmed == true && !heartbeat.Armed && armedFrom.HasValue)
-            {
-                intervals.Add((armedFrom.Value, time));
-                armedFrom = null;
+                continue;
             }
 
-            wasArmed = heartbeat.Armed;
+            if (IsInvalidCoordinate(home.LatitudeDeg, home.LongitudeDeg))
+            {
+                continue;
+            }
+
+            if (lastLat.HasValue && lastLng.HasValue
+                && CoordinatesEqual(home.LatitudeDeg, home.LongitudeDeg, lastLat.Value, lastLng.Value))
+            {
+                continue;
+            }
+
+            points.Add(new FlightHomePoint
+            {
+                ChangedAtMs = time.ToUnixTimeMilliseconds(),
+                LatitudeDeg = home.LatitudeDeg,
+                LongitudeDeg = home.LongitudeDeg,
+                AltitudeM = home.AltitudeM
+            });
+
+            lastLat = home.LatitudeDeg;
+            lastLng = home.LongitudeDeg;
         }
 
-        if (armedFrom.HasValue)
-        {
-            var lastTime = TlogTime.ParseUtc(messages[^1].TimeUtc);
-            intervals.Add((armedFrom.Value, lastTime));
-        }
-
-        return intervals;
+        return points;
     }
 
-    private static DateTimeOffset Clamp(DateTimeOffset value, DateTimeOffset min, DateTimeOffset max)
+    private static (DateTimeOffset From, DateTimeOffset Until) FindArmedWindow(
+        IReadOnlyList<VehicleHeartbeatSelector.HeartbeatSample> heartbeats,
+        DateTimeOffset start,
+        DateTimeOffset end)
     {
-        if (value < min) return min;
-        if (value > max) return max;
-        return value;
+        var inSegment = heartbeats
+            .Where(sample => sample.Time >= start && sample.Time <= end)
+            .Select(static sample => (sample.Time, sample.Armed))
+            .ToList();
+
+        if (inSegment.Count == 0)
+        {
+            return (start, end);
+        }
+
+        var armedIntervals = ArmedIntervalFinder.Find(inSegment);
+        if (armedIntervals.Count == 0)
+        {
+            return (start, end);
+        }
+
+        var first = armedIntervals[0].ArmedFrom;
+        var last = armedIntervals[^1].ArmedUntil;
+        return (first, last);
     }
+
+    private static bool IsInvalidCoordinate(double latitudeDeg, double longitudeDeg) =>
+        Math.Abs(latitudeDeg) < 1e-9 && Math.Abs(longitudeDeg) < 1e-9;
+
+    private static bool CoordinatesEqual(double lat1, double lng1, double lat2, double lng2) =>
+        Math.Abs(lat1 - lat2) < 1e-7 && Math.Abs(lng1 - lng2) < 1e-7;
 
     private static string Format(DateTimeOffset value) =>
         value.ToUniversalTime().UtcDateTime.ToString("o");

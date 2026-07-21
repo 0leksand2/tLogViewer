@@ -4,7 +4,7 @@ using tLogViewer.Core.Models;
 using tLogViewer.Core.Models.Messages;
 using tLogViewer.Core.Models.Messages.RcChannelsMessage;
 
-namespace tLogViewer.Services;
+namespace tLogViewer.Services.Services;
 
 public static class MessageProcessingFactory
 {

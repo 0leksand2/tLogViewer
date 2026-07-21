@@ -19,9 +19,17 @@ export interface FlightSummary {
   messageCount: number;
 }
 
+export interface FlightHomePoint {
+  changedAtMs: number;
+  latitudeDeg: number;
+  longitudeDeg: number;
+  altitudeM: number;
+}
+
 export interface Flight extends FlightSummary {
   /** Unix ms → ({messageId}_{valueName} → field value). */
   messages: Record<string, Record<string, unknown>>;
+  homePoints: FlightHomePoint[];
 }
 
 export interface TlogFlightResult {

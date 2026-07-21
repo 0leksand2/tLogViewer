@@ -1,6 +1,6 @@
 using tLogViewer.Core.Models;
 
-namespace tLogViewer.Services;
+namespace tLogViewer.Services.Interfaces;
 
 public interface ITlogSessionStore
 {

@@ -1,6 +1,4 @@
-using tLogViewer.Core.Models;
-
-namespace tLogViewer.Services;
+namespace tLogViewer.Core.Models;
 
 public sealed class TlogSessionSnapshot
 {

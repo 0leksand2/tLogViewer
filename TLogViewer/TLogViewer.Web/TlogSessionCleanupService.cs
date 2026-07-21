@@ -1,4 +1,4 @@
-using tLogViewer.Services;
+using tLogViewer.Services.Interfaces;
 
 namespace TLogViewer.Web;
 
