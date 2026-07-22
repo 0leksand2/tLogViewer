@@ -13,9 +13,11 @@
       cdkDropListOrientation="mixed"
       (cdkDropListDropped)="onTileDropped($event)"
     >
-      @for (tile of tiles(); track tile.key) {
+      @for (tile of tiles(); track tile.key; let i = $index) {
         <article
           class="data-tab__tile"
+          [class.data-tab__tile--edge-right]="isLastColumn(i)"
+          [class.data-tab__tile--edge-bottom]="isLastRow(i)"
           cdkDrag
           [attr.title]="tile.name"
           [attr.aria-label]="tile.name"

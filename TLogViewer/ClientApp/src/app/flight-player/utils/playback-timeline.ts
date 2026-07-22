@@ -149,6 +149,70 @@ export function resolveFlightHomePoints(
   return resolved.sort((a, b) => a.changedAtMs - b.changedAtMs);
 }
 
+export interface PlaybackModeChangePoint {
+  changedAtMs: number;
+  customMode: number;
+}
+
+/** Build mode-change timeline from flattened HEARTBEAT `0_customMode` when API omits points. */
+export function extractModeChangePointsFromMessages(
+  messages: Record<string, Record<string, unknown>> | null | undefined,
+): PlaybackModeChangePoint[] {
+  if (!messages) {
+    return [];
+  }
+
+  const points: PlaybackModeChangePoint[] = [];
+  let lastMode: number | null = null;
+
+  for (const changedAtMs of sortedPlaybackPoints(messages)) {
+    const fields = messages[String(changedAtMs)];
+    if (!fields) {
+      continue;
+    }
+
+    const customMode = asFiniteNumber(fields['0_customMode']);
+    if (customMode === null) {
+      continue;
+    }
+
+    const mode = Math.trunc(customMode);
+    if (lastMode !== null && mode !== lastMode) {
+      points.push({ changedAtMs, customMode: mode });
+    }
+
+    lastMode = mode;
+  }
+
+  return points;
+}
+
+export function resolveFlightModeChangePoints(
+  modeChangePoints: readonly PlaybackModeChangePoint[] | null | undefined,
+  messages: Record<string, Record<string, unknown>> | null | undefined,
+): PlaybackModeChangePoint[] {
+  const fromApi = (modeChangePoints ?? [])
+    .map((point) => {
+      const raw = point as { changedAtMs?: unknown; customMode?: unknown };
+      return {
+        changedAtMs: asFiniteNumber(raw.changedAtMs) ?? NaN,
+        customMode: asFiniteNumber(raw.customMode) ?? NaN,
+      };
+    })
+    .filter(
+      (point) => Number.isFinite(point.changedAtMs) && Number.isFinite(point.customMode),
+    )
+    .map((point) => ({
+      changedAtMs: point.changedAtMs,
+      customMode: Math.trunc(point.customMode),
+    }));
+
+  const resolved =
+    fromApi.length > 0 ? fromApi : extractModeChangePointsFromMessages(messages);
+
+  return resolved.sort((a, b) => a.changedAtMs - b.changedAtMs);
+}
+
 /** Active home for the current playback millisecond (latest change at or before playback). */
 export function resolveActiveHomePoint(
   homePoints: readonly PlaybackHomePoint[] | null | undefined,

@@ -19,4 +19,7 @@ public sealed class FlightDto
 
     /// <summary>Unique home coordinates and the millisecond each became active.</summary>
     public required IReadOnlyList<FlightHomePoint> HomePoints { get; init; }
+
+    /// <summary>Unix milliseconds when HEARTBEAT customMode (flight mode) changed.</summary>
+    public required IReadOnlyList<FlightModeChangePoint> ModeChangePoints { get; init; }
 }

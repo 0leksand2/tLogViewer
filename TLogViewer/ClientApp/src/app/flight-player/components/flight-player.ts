@@ -10,11 +10,15 @@ import {
 } from '@angular/core';
 import { DropdownModule } from '../../shared/dropdown/dropdown.module';
 import { DropdownOption } from '../../shared/dropdown/models/dropdown-option.model';
+import { FlightModeChangeService } from '../../core/services/flight-mode-change.service';
+import { flightModeLabel } from '../../core/flight-mode';
 import { snapProgressPercent } from '../utils/playback-timeline';
 
 /** Playback rate as percent of realtime (100 = 1 ms wall-clock → 1 ms of log). */
 const PLAYBACK_SPEEDS = [1, 10, 50, 75, 100, 125, 150, 200, 500, 1000] as const;
 const FORWARD_PERCENT = 5;
+/** Seek this far before a mode-change marker when the marker is clicked. */
+const MODE_MARKER_SEEK_BEFORE_MS = 5_000;
 
 @Component({
   selector: 'app-flight-player',
@@ -44,6 +48,7 @@ export class FlightPlayerComponent implements OnDestroy {
   }));
 
   private readonly destroyRef = inject(DestroyRef);
+  private readonly flightModeChanges = inject(FlightModeChangeService);
   private rafId: number | null = null;
   private lastFrameMs: number | null = null;
 
@@ -53,6 +58,33 @@ export class FlightPlayerComponent implements OnDestroy {
   protected readonly endLabel = computed(() => this.formatPercent(100));
 
   protected readonly speedValue = computed(() => String(this.playbackSpeed()));
+
+  /** Mode-change ticks positioned on the slider track (0–100%). */
+  protected readonly modeChangeMarkers = computed(() => {
+    const points = this.playbackPoints();
+    const markers = this.flightModeChanges.markers();
+    if (points.length < 2 || markers.length === 0) {
+      return [] as {
+        percent: number;
+        customMode: number;
+        changedAtMs: number;
+        label: string;
+      }[];
+    }
+
+    const first = points[0]!;
+    const last = points[points.length - 1]!;
+    const span = Math.max(1, last - first);
+
+    return markers
+      .map((marker) => ({
+        percent: Math.min(100, Math.max(0, ((marker.changedAtMs - first) / span) * 100)),
+        customMode: marker.customMode,
+        changedAtMs: marker.changedAtMs,
+        label: flightModeLabel(marker.customMode),
+      }))
+      .filter((marker) => Number.isFinite(marker.percent));
+  });
 
   /** Log timeline length in milliseconds (first→last message key, or duration). */
   private readonly timelineSpanMs = computed(() => {
@@ -128,6 +160,21 @@ export class FlightPlayerComponent implements OnDestroy {
     }
 
     this.progressPercent.set(snapProgressPercent(value));
+  }
+
+  /** Jump to 5 seconds before the mode-change timecode (clamped to flight start). */
+  protected seekToModeMarker(changedAtMs: number): void {
+    const points = this.playbackPoints();
+    if (points.length < 2) {
+      return;
+    }
+
+    const first = points[0]!;
+    const last = points[points.length - 1]!;
+    const span = Math.max(1, last - first);
+    const targetMs = Math.max(first, changedAtMs - MODE_MARKER_SEEK_BEFORE_MS);
+    const percent = ((targetMs - first) / span) * 100;
+    this.progressPercent.set(snapProgressPercent(percent));
   }
 
   protected onSpeedChange(value: string | null): void {

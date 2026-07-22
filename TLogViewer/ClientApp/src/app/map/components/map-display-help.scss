@@ -1,0 +1,141 @@
+:host {
+  display: block;
+}
+
+.map-help {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.map-help__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.map-help__heading {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #5c6570;
+}
+
+.map-help__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.map-help__item-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #1a1d24;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.map-help__text {
+  margin: 0;
+  color: #5c6570;
+  font-size: 0.875rem;
+  line-height: 1.45;
+
+  code {
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 0.8125rem;
+  }
+}
+
+.map-help__swatch {
+  flex-shrink: 0;
+  display: inline-block;
+  width: 1.35rem;
+  height: 0.15rem;
+  border-radius: 1px;
+
+  &--heading {
+    background: #f00;
+  }
+
+  &--target {
+    background: #c2410c;
+  }
+
+  &--wind {
+    position: relative;
+    width: 1.5rem;
+    height: 0.7rem;
+    background: transparent;
+  }
+}
+
+.map-help__swatch-line {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1.1rem;
+  height: 0.15rem;
+  margin-top: -0.075rem;
+  border-radius: 1px;
+  background: #006400;
+}
+
+.map-help__swatch-arrow {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 0;
+  height: 0;
+  margin-top: -0.28rem;
+  border-top: 0.28rem solid transparent;
+  border-bottom: 0.28rem solid transparent;
+  border-left: 0.4rem solid #006400;
+}
+
+.map-help__legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-help__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.map-help__legend-swatch {
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 2px;
+  border: 1px solid rgb(0 0 0 / 12%);
+}
+
+.map-help__legend-label {
+  color: #1a1d24;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.map-help__legend-mode {
+  color: #8a929c;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .map-help__legend {
+    grid-template-columns: 1fr;
+  }
+}

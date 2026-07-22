@@ -9,6 +9,8 @@ import {
 } from '@angular/core';
 import * as L from 'leaflet';
 import { MapDisplaySettingsService } from '../services/map-display-settings.service';
+import { FlightTrailVertex } from '../utils/flight-trail';
+import { flightModeLabel } from '../../core/flight-mode';
 
 export interface HomeLocationOptions {
   /** Pan/zoom the map when the active flight changes. */
@@ -69,6 +71,8 @@ export class MapComponent implements OnDestroy {
   private planeWindLayer?: HTMLElement;
   private planeWindLine?: HTMLElement;
   private planeWindArrow?: HTMLElement;
+  private trailLayer?: L.LayerGroup;
+  private lastTrailSignature = '';
 
   constructor() {
     afterNextRender(() => this.initMap());
@@ -79,9 +83,16 @@ export class MapComponent implements OnDestroy {
       this.displaySettings.displayWind();
       this.applyDisplayLineVisibility();
     });
+
+    effect(() => {
+      if (!this.displaySettings.displayTrail()) {
+        this.clearFlightTrail();
+      }
+    });
   }
 
   ngOnDestroy(): void {
+    this.clearFlightTrail();
     this.homeMarker = undefined;
     this.planeMarker = undefined;
     this.targetMarker = undefined;
@@ -153,11 +164,13 @@ export class MapComponent implements OnDestroy {
     ) {
       this.pendingPlane = null;
       this.resetPlaneMarkerState();
+      this.clearFlightTrail();
       return;
     }
 
     if (flightKey !== this.lastPlaneFlightKey) {
       this.resetPlaneMarkerState({ keepFlightKey: true });
+      this.clearFlightTrail();
       this.lastPlaneFlightKey = flightKey;
     }
 
@@ -209,6 +222,104 @@ export class MapComponent implements OnDestroy {
     }
 
     this.applyTargetMarker(latitudeDeg, longitudeDeg, altitudeM);
+  }
+
+  /** Replace the mode-colored flight trail (empty clears). */
+  setFlightTrail(vertices: readonly FlightTrailVertex[]): void {
+    if (!this.displaySettings.displayTrail()) {
+      this.clearFlightTrail();
+      return;
+    }
+
+    const signature = vertices
+      .map(
+        (vertex) =>
+          `${vertex.playbackMs}:${vertex.lat.toFixed(6)}:${vertex.lng.toFixed(6)}:${vertex.customMode}:${vertex.isModeChange ? 1 : 0}`,
+      )
+      .join('|');
+
+    if (signature === this.lastTrailSignature) {
+      return;
+    }
+
+    this.lastTrailSignature = signature;
+
+    if (!this.map) {
+      return;
+    }
+
+    this.ensureTrailLayer();
+    this.trailLayer!.clearLayers();
+
+    if (vertices.length === 0) {
+      return;
+    }
+
+    // Segment polylines by contiguous customMode. Include the next (mode-change)
+    // vertex on the ending segment so the old color meets the change dot.
+    let segmentStart = 0;
+    for (let i = 1; i <= vertices.length; i++) {
+      const prev = vertices[i - 1]!;
+      const next = vertices[i];
+      const modeBreak = !next || next.customMode !== prev.customMode;
+
+      if (!modeBreak) {
+        continue;
+      }
+
+      const segment = vertices.slice(segmentStart, i);
+      const lineVertices = next ? [...segment, next] : segment;
+      if (lineVertices.length >= 2) {
+        L.polyline(
+          lineVertices.map((vertex) => [vertex.lat, vertex.lng] as L.LatLngExpression),
+          {
+            color: segment[0]?.color ?? prev.color,
+            weight: 3,
+            opacity: 0.85,
+            lineJoin: 'round',
+            lineCap: 'round',
+          },
+        ).addTo(this.trailLayer!);
+      }
+
+      segmentStart = i;
+    }
+
+    for (const vertex of vertices) {
+      const radius = vertex.isModeChange ? 3 : 1.25;
+      const marker = L.circleMarker([vertex.lat, vertex.lng], {
+        radius,
+        color: vertex.color,
+        weight: vertex.isModeChange ? 1.5 : 1,
+        fillColor: vertex.color,
+        fillOpacity: vertex.isModeChange ? 1 : 0.85,
+        opacity: 1,
+      });
+
+      if (vertex.isModeChange) {
+        marker.bindTooltip(`FLT MODE: ${flightModeLabel(vertex.customMode)}`, {
+          direction: 'top',
+          opacity: 0.9,
+        });
+      }
+
+      marker.addTo(this.trailLayer!);
+    }
+  }
+
+  clearFlightTrail(): void {
+    this.lastTrailSignature = '';
+    this.trailLayer?.clearLayers();
+  }
+
+  private ensureTrailLayer(): void {
+    if (!this.map) {
+      return;
+    }
+
+    if (!this.trailLayer) {
+      this.trailLayer = L.layerGroup().addTo(this.map);
+    }
   }
 
   private resetPlaneMarkerState(options: { keepFlightKey?: boolean } = {}): void {
@@ -291,6 +402,8 @@ export class MapComponent implements OnDestroy {
         pending.windSpeed,
       );
     }
+
+    this.ensureTrailLayer();
 
     if (this.pendingTarget) {
       const pending = this.pendingTarget;
@@ -839,7 +952,7 @@ function createPlaneIcon(
   navLine.style.width = '1px';
   navLine.style.height = `${PLANE_HEADING_LINE_LENGTH}px`;
   navLine.style.marginLeft = '-0.5px';
-  navLine.style.background = '#f97316';
+  navLine.style.background = '#c2410c';
   navLine.style.pointerEvents = 'none';
   navLayer.appendChild(navLine);
 

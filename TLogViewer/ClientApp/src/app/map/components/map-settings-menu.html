@@ -8,6 +8,7 @@
       (change)="onDisplayHeadingChange($any($event.target).checked)"
     />
     <span>Display heading</span>
+    <span class="map-settings__swatch map-settings__swatch--heading" aria-hidden="true"></span>
   </label>
 
   <label class="map-settings__option">
@@ -17,6 +18,7 @@
       (change)="onDisplayTargetPathChange($any($event.target).checked)"
     />
     <span>Display target path</span>
+    <span class="map-settings__swatch map-settings__swatch--target" aria-hidden="true"></span>
   </label>
 
   <label class="map-settings__option">
@@ -26,5 +28,50 @@
       (change)="onDisplayWindChange($any($event.target).checked)"
     />
     <span>Display wind</span>
+    <span class="map-settings__swatch map-settings__swatch--wind" aria-hidden="true">
+      <span class="map-settings__swatch-line"></span>
+      <span class="map-settings__swatch-arrow"></span>
+    </span>
+  </label>
+
+  <label class="map-settings__option">
+    <input
+      type="checkbox"
+      [checked]="draftTrail()"
+      (change)="onDisplayTrailChange($any($event.target).checked)"
+    />
+    <span>Display trail</span>
+  </label>
+
+  <label class="map-settings__option map-settings__option--nested">
+    <input
+      type="checkbox"
+      [checked]="draftFullTrail()"
+      [disabled]="!draftTrail()"
+      (change)="onDisplayFullTrailChange($any($event.target).checked)"
+    />
+    <span>Full flight trail</span>
+  </label>
+  <p class="map-settings__note">
+    Showing the full flight trail may seriously affect performance on long logs.
+  </p>
+
+  <label class="map-settings__option map-settings__option--trail-length">
+    <span class="map-settings__trail-length-label">Trail length</span>
+    <select
+      class="map-settings__select"
+      [disabled]="!draftTrail() || draftFullTrail()"
+      (change)="onTrailLengthChange($any($event.target).value)"
+      aria-label="Trail length"
+    >
+      @for (option of trailLengthOptions; track option.seconds) {
+        <option
+          [value]="option.seconds"
+          [selected]="draftTrailLengthSeconds() === option.seconds"
+        >
+          {{ option.label }}
+        </option>
+      }
+    </select>
   </label>
 </div>

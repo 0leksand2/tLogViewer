@@ -55,6 +55,18 @@ export class SideMenuDataTabComponent {
     this.openProperties.emit();
   }
 
+  protected isLastColumn(index: number): boolean {
+    return (index + 1) % this.columnCount() === 0;
+  }
+
+  protected isLastRow(index: number): boolean {
+    const cols = this.columnCount();
+    const count = this.tiles().length;
+    const remainder = count % cols;
+    const lastRowStart = count - (remainder === 0 ? cols : remainder);
+    return index >= lastRowStart;
+  }
+
   protected onTileDropped(event: CdkDragDrop<unknown>): void {
     if (event.previousIndex === event.currentIndex) {
       return;

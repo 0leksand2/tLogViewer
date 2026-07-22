@@ -9,19 +9,59 @@ export interface MapDisplaySettings {
   displayTargetPath: boolean;
   /** Dark green wind-direction line. */
   displayWind: boolean;
+  /** Mode-colored trail behind the aircraft. */
+  displayTrail: boolean;
+  /** Trail from flight start to current playback (can be slow). */
+  displayFullTrail: boolean;
+  /** Trail length in seconds of log time (ignored when full trail is on). */
+  trailLengthSeconds: number;
 }
+
+export const TRAIL_LENGTH_OPTIONS = [
+  { seconds: 10, label: '10s' },
+  { seconds: 30, label: '30s' },
+  { seconds: 60, label: '1min' },
+  { seconds: 120, label: '2min' },
+  { seconds: 300, label: '5min' },
+  { seconds: 600, label: '10min' },
+  { seconds: 1200, label: '20min' },
+] as const;
 
 const DEFAULTS: MapDisplaySettings = {
   displayHeading: true,
   displayTargetPath: true,
   displayWind: true,
+  displayTrail: true,
+  displayFullTrail: false,
+  trailLengthSeconds: 60,
 };
+
+function clampTrailLength(value: number): number {
+  if (!Number.isFinite(value)) {
+    return DEFAULTS.trailLengthSeconds;
+  }
+  return Math.min(1200, Math.max(5, Math.round(value)));
+}
+
+function snapTrailLength(value: number): number {
+  const clamped = clampTrailLength(value);
+  let best: number = TRAIL_LENGTH_OPTIONS[0].seconds;
+  for (const option of TRAIL_LENGTH_OPTIONS) {
+    if (Math.abs(option.seconds - clamped) < Math.abs(best - clamped)) {
+      best = option.seconds;
+    }
+  }
+  return best;
+}
 
 @Injectable({ providedIn: 'root' })
 export class MapDisplaySettingsService {
   readonly displayHeading = signal(DEFAULTS.displayHeading);
   readonly displayTargetPath = signal(DEFAULTS.displayTargetPath);
   readonly displayWind = signal(DEFAULTS.displayWind);
+  readonly displayTrail = signal(DEFAULTS.displayTrail);
+  readonly displayFullTrail = signal(DEFAULTS.displayFullTrail);
+  readonly trailLengthSeconds = signal(DEFAULTS.trailLengthSeconds);
 
   constructor() {
     this.restore();
@@ -42,6 +82,32 @@ export class MapDisplaySettingsService {
     this.persist();
   }
 
+  setDisplayTrail(value: boolean): void {
+    this.displayTrail.set(value);
+    this.persist();
+  }
+
+  setDisplayFullTrail(value: boolean): void {
+    this.displayFullTrail.set(value);
+    this.persist();
+  }
+
+  setTrailLengthSeconds(value: number): void {
+    this.trailLengthSeconds.set(snapTrailLength(value));
+    this.persist();
+  }
+
+  /** Replace all display settings and persist once. */
+  applyAll(settings: MapDisplaySettings): void {
+    this.displayHeading.set(!!settings.displayHeading);
+    this.displayTargetPath.set(!!settings.displayTargetPath);
+    this.displayWind.set(!!settings.displayWind);
+    this.displayTrail.set(!!settings.displayTrail);
+    this.displayFullTrail.set(!!settings.displayFullTrail);
+    this.trailLengthSeconds.set(snapTrailLength(Number(settings.trailLengthSeconds)));
+    this.persist();
+  }
+
   private restore(): void {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -59,6 +125,18 @@ export class MapDisplaySettingsService {
       if (typeof parsed.displayWind === 'boolean') {
         this.displayWind.set(parsed.displayWind);
       }
+      if (typeof parsed.displayTrail === 'boolean') {
+        this.displayTrail.set(parsed.displayTrail);
+      }
+      if (typeof parsed.displayFullTrail === 'boolean') {
+        this.displayFullTrail.set(parsed.displayFullTrail);
+      }
+      if (
+        typeof parsed.trailLengthSeconds === 'number' ||
+        typeof parsed.trailLengthSeconds === 'string'
+      ) {
+        this.trailLengthSeconds.set(snapTrailLength(Number(parsed.trailLengthSeconds)));
+      }
     } catch {
       // keep defaults
     }
@@ -69,6 +147,9 @@ export class MapDisplaySettingsService {
       displayHeading: this.displayHeading(),
       displayTargetPath: this.displayTargetPath(),
       displayWind: this.displayWind(),
+      displayTrail: this.displayTrail(),
+      displayFullTrail: this.displayFullTrail(),
+      trailLengthSeconds: this.trailLengthSeconds(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }

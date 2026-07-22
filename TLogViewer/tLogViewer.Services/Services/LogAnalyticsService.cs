@@ -82,6 +82,8 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
                 homePoints = ExtractHomePoints(messages, start, end);
             }
 
+            var modeChangePoints = ExtractModeChangePoints(byMillisecond);
+
             flights.Add(new FlightDto
             {
                 Id = Guid.NewGuid(),
@@ -94,7 +96,8 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
                 Messages = byMillisecond.ToDictionary(
                     static pair => pair.Key,
                     static pair => (IReadOnlyDictionary<string, object>)pair.Value),
-                HomePoints = homePoints
+                HomePoints = homePoints,
+                ModeChangePoints = modeChangePoints
             });
         }
 
@@ -121,6 +124,73 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
 
             var valueName = PropertyNaming.ConvertName(property.Name);
             atMs[$"{message.MessageId}_{valueName}"] = value;
+        }
+    }
+
+    /// <summary>
+    /// Collects milliseconds where HEARTBEAT <c>0_customMode</c> differs from the previous value.
+    /// </summary>
+    private static List<FlightModeChangePoint> ExtractModeChangePoints(
+        Dictionary<long, Dictionary<string, object>> byMillisecond)
+    {
+        var points = new List<FlightModeChangePoint>();
+        uint? lastMode = null;
+
+        foreach (var ms in byMillisecond.Keys.OrderBy(static key => key))
+        {
+            if (!TryReadCustomMode(byMillisecond[ms], out var mode))
+            {
+                continue;
+            }
+
+            if (lastMode.HasValue && mode != lastMode.Value)
+            {
+                points.Add(new FlightModeChangePoint
+                {
+                    ChangedAtMs = ms,
+                    CustomMode = mode
+                });
+            }
+
+            lastMode = mode;
+        }
+
+        return points;
+    }
+
+    private static bool TryReadCustomMode(IReadOnlyDictionary<string, object> fields, out uint mode)
+    {
+        mode = 0;
+        if (!fields.TryGetValue("0_customMode", out var value))
+        {
+            return false;
+        }
+
+        switch (value)
+        {
+            case uint u:
+                mode = u;
+                return true;
+            case int i when i >= 0:
+                mode = (uint)i;
+                return true;
+            case long l when l >= 0 && l <= uint.MaxValue:
+                mode = (uint)l;
+                return true;
+            case ulong ul when ul <= uint.MaxValue:
+                mode = (uint)ul;
+                return true;
+            case byte b:
+                mode = b;
+                return true;
+            case short s when s >= 0:
+                mode = (uint)s;
+                return true;
+            case ushort us:
+                mode = us;
+                return true;
+            default:
+                return false;
         }
     }
 

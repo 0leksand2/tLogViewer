@@ -44,17 +44,35 @@
 
   <div class="flight-player__timeline">
     <span class="flight-player__percent">{{ progressLabel() }}</span>
-    <input
-      type="range"
-      class="flight-player__slider"
-      min="0"
-      max="100"
-      step="0.1"
-      [value]="progressPercent()"
-      [disabled]="!hasPlayback()"
-      (input)="onSliderInput($event)"
-      aria-label="Flight progress"
-    />
+    <div class="flight-player__track">
+      <div class="flight-player__markers">
+        @for (marker of modeChangeMarkers(); track marker.changedAtMs) {
+          <button
+            type="button"
+            class="flight-player__marker"
+            [style.left.%]="marker.percent"
+            [attr.aria-label]="'FLT MODE: ' + marker.label"
+            (click)="seekToModeMarker(marker.changedAtMs)"
+          >
+            <span class="flight-player__marker-tick" aria-hidden="true"></span>
+            <span class="flight-player__marker-popup" role="tooltip">
+              FLT MODE: {{ marker.label }}
+            </span>
+          </button>
+        }
+      </div>
+      <input
+        type="range"
+        class="flight-player__slider"
+        min="0"
+        max="100"
+        step="0.1"
+        [value]="progressPercent()"
+        [disabled]="!hasPlayback()"
+        (input)="onSliderInput($event)"
+        aria-label="Flight progress"
+      />
+    </div>
     <span class="flight-player__percent">{{ endLabel() }}</span>
   </div>
 </div>

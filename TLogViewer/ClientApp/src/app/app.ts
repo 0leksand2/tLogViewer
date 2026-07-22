@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, switchMap, of, catchError, EMPTY } from 'rxjs';
 import { MapComponent } from './map/components/map';
 import { MapModule } from './map/map.module';
+import { MapDisplayHelpComponent } from './map/components/map-display-help';
 import { SideMenuModule } from './side-menu/side-menu.module';
 import { DropdownModule } from './shared/dropdown/dropdown.module';
 import { ModalModule } from './shared/modal/modal.module';
@@ -26,6 +27,7 @@ import { FlightPlayerModule } from './flight-player/flight-player.module';
 import {
   resolveActiveHomePoint,
   resolveFlightHomePoints,
+  resolveFlightModeChangePoints,
   resolvePlanePosition,
   resolvePlaybackPoint,
   resolvePositionTarget,
@@ -36,13 +38,16 @@ import {
   MapDisplaySettings,
   MapDisplaySettingsService,
 } from './map/services/map-display-settings.service';
+import { buildFlightTrail, TRAIL_SAMPLE_MS } from './map/utils/flight-trail';
 import { CurrentValue } from './core/services/current.value';
+import { FlightModeChangeService } from './core/services/flight-mode-change.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     MapModule,
+    MapDisplayHelpComponent,
     SideMenuModule,
     TlogLoadMenuModule,
     DropdownModule,
@@ -57,15 +62,21 @@ export class App {
   private readonly selectedPropertiesStorage = inject(SelectedTelemetryPropertiesStorage);
   private readonly tlogService = inject(TlogService);
   private readonly currentValue = inject(CurrentValue);
+  private readonly flightModeChanges = inject(FlightModeChangeService);
   private readonly mapDisplaySettings = inject(MapDisplaySettingsService);
   private readonly flightSelection$ = new Subject<{ sessionId: string; flightId: string } | null>();
+  private lastTrailBuildKey = '';
 
   protected readonly menuOpen = signal(true);
   protected readonly propertiesModalOpen = signal(false);
   protected readonly settingsModalOpen = signal(false);
+  protected readonly helpModalOpen = signal(false);
   protected readonly displayHeading = this.mapDisplaySettings.displayHeading;
   protected readonly displayTargetPath = this.mapDisplaySettings.displayTargetPath;
   protected readonly displayWind = this.mapDisplaySettings.displayWind;
+  protected readonly displayTrail = this.mapDisplaySettings.displayTrail;
+  protected readonly displayFullTrail = this.mapDisplaySettings.displayFullTrail;
+  protected readonly trailLengthSeconds = this.mapDisplaySettings.trailLengthSeconds;
   protected readonly selectedProperties = signal<MissionPlannerProperty[]>(
     this.selectedPropertiesStorage.load(),
   );
@@ -164,6 +175,11 @@ export class App {
         this.playbackPoints(),
         this.flightProgressPercent(),
       );
+      // Track trail settings even when the plane is absent so length/full-trail
+      // changes always rebuild the trail on the next pose update.
+      const showTrail = this.mapDisplaySettings.displayTrail();
+      const fullTrail = this.mapDisplaySettings.displayFullTrail();
+      const trailLengthSeconds = this.mapDisplaySettings.trailLengthSeconds();
       const plane = resolvePlanePosition(flight?.messages, playbackMs);
       const target = resolvePositionTarget(flight?.messages, playbackMs);
       const homePoints = resolveFlightHomePoints(flight?.homePoints, flight?.messages);
@@ -176,6 +192,8 @@ export class App {
 
       if (!plane) {
         map.setPlaneLocation(null, null);
+        map.setFlightTrail([]);
+        this.lastTrailBuildKey = '';
       } else {
         map.setPlaneLocation(
           plane.lat,
@@ -186,6 +204,36 @@ export class App {
           plane.windDir,
           plane.windSpeed,
         );
+
+        const modeMarkers = this.flightModeChanges.markers();
+        const sampleBucket =
+          playbackMs === null ? -1 : Math.floor(playbackMs / TRAIL_SAMPLE_MS);
+        const modeEpoch = modeMarkers.reduce(
+          (count, marker) =>
+            playbackMs !== null && marker.changedAtMs <= playbackMs ? count + 1 : count,
+          0,
+        );
+        const trailKey = showTrail
+          ? `${flight?.id ?? ''}|${sampleBucket}|${modeEpoch}|${fullTrail ? 'full' : trailLengthSeconds}`
+          : 'off';
+
+        if (trailKey !== this.lastTrailBuildKey) {
+          this.lastTrailBuildKey = trailKey;
+          if (showTrail) {
+            map.setFlightTrail(
+              buildFlightTrail(
+                flight?.messages,
+                this.playbackPoints(),
+                playbackMs,
+                modeMarkers,
+                trailLengthSeconds,
+                fullTrail,
+              ),
+            );
+          } else {
+            map.setFlightTrail([]);
+          }
+        }
       }
 
       if (!target) {
@@ -207,6 +255,7 @@ export class App {
 
       if (!sessionId || !flightId) {
         this.loadedFlight.set(null);
+        this.flightModeChanges.clear();
         this.flightSelection$.next(null);
         return;
       }
@@ -234,11 +283,23 @@ export class App {
 
         if (flight) {
           const homePoints = resolveFlightHomePoints(flight.homePoints, flight.messages);
+          const modeChangePoints = resolveFlightModeChangePoints(
+            flight.modeChangePoints,
+            flight.messages,
+          );
+          this.flightModeChanges.setMarkers(modeChangePoints);
           console.log('Flight home points', {
             flightId: flight.id,
             fromApi: flight.homePoints,
             resolved: homePoints,
           });
+          console.log('Flight mode change points', {
+            flightId: flight.id,
+            fromApi: flight.modeChangePoints,
+            resolved: modeChangePoints,
+          });
+        } else {
+          this.flightModeChanges.clear();
         }
       });
   }
@@ -249,6 +310,14 @@ export class App {
 
   protected openSettingsModal(): void {
     this.settingsModalOpen.set(true);
+  }
+
+  protected openHelpModal(): void {
+    this.helpModalOpen.set(true);
+  }
+
+  protected onHelpClosed(): void {
+    this.helpModalOpen.set(false);
   }
 
   protected onPropertiesSaved(result: ModalCloseResult): void {
@@ -271,9 +340,8 @@ export class App {
     if (!value) {
       return;
     }
-    this.mapDisplaySettings.setDisplayHeading(value.displayHeading);
-    this.mapDisplaySettings.setDisplayTargetPath(value.displayTargetPath);
-    this.mapDisplaySettings.setDisplayWind(value.displayWind);
+    this.lastTrailBuildKey = '';
+    this.mapDisplaySettings.applyAll(value);
   }
 
   protected onSettingsCancelled(): void {
@@ -284,6 +352,7 @@ export class App {
     this.sessionId.set(result.sessionId);
     this.flightSummaries.set(result.flights);
     this.loadedFlight.set(null);
+    this.flightModeChanges.clear();
     this.selectedFlightId.set(result.flights[0]?.id ?? null);
   }
 

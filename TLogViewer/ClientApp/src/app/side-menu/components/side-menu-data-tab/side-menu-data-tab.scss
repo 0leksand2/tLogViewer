@@ -47,9 +47,8 @@
   min-height: 0;
   overflow: auto;
   align-content: start;
-  gap: 1px;
-  border-top: 1px solid #e2e5eb;
-  background: #e2e5eb;
+  gap: 0;
+  background: var(--panel-bg, #f7f8fa);
 }
 
 .data-tab__tile {
@@ -63,8 +62,10 @@
   min-height: 80px;
   padding: 0.5rem 0.35rem;
   border: none;
+  border-right: 1px solid #e2e5eb;
+  border-bottom: 1px solid #e2e5eb;
   border-radius: 0;
-  background: #f7f8fa;
+  background: var(--panel-bg, #f7f8fa);
   box-shadow: none;
   overflow: hidden;
   cursor: grab;
@@ -90,6 +91,14 @@
 
   &.cdk-drag-animating {
     transition: transform 160ms ease;
+  }
+
+  &--edge-right {
+    border-right: none;
+  }
+
+  &--edge-bottom {
+    border-bottom: none;
   }
 }
 

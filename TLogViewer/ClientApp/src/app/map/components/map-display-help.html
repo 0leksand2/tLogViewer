@@ -1,0 +1,64 @@
+<div class="map-help">
+  <section class="map-help__section">
+    <h3 class="map-help__heading">Map display lines</h3>
+
+    <div class="map-help__item">
+      <div class="map-help__item-title">
+        <span class="map-help__swatch map-help__swatch--heading" aria-hidden="true"></span>
+        Display heading
+      </div>
+      <p class="map-help__text">
+        Shows a red line from the aircraft in the direction of its current yaw / heading
+        (the way the nose is pointed).
+      </p>
+    </div>
+
+    <div class="map-help__item">
+      <div class="map-help__item-title">
+        <span class="map-help__swatch map-help__swatch--target" aria-hidden="true"></span>
+        Display target path
+      </div>
+      <p class="map-help__text">
+        Shows an orange line in the navigation bearing / target direction — the path the
+        autopilot is trying to follow toward the active setpoint.
+      </p>
+    </div>
+
+    <div class="map-help__item">
+      <div class="map-help__item-title">
+        <span class="map-help__swatch map-help__swatch--wind" aria-hidden="true">
+          <span class="map-help__swatch-line"></span>
+          <span class="map-help__swatch-arrow"></span>
+        </span>
+        Display wind
+      </div>
+      <p class="map-help__text">
+        Shows a dark green line with an arrow for estimated wind direction. Line length
+        scales with wind speed when that data is available in the log.
+      </p>
+    </div>
+  </section>
+
+  <section class="map-help__section">
+    <h3 class="map-help__heading">Flight trail colors</h3>
+    <p class="map-help__text">
+      The trail behind the aircraft is colored by ArduPlane flight mode
+      (<code>HEARTBEAT customMode</code>). Larger dots mark the moments when flight mode
+      changes.
+    </p>
+
+    <ul class="map-help__legend">
+      @for (entry of modeLegend; track entry.customMode) {
+        <li class="map-help__legend-item">
+          <span
+            class="map-help__legend-swatch"
+            [style.background]="entry.color"
+            aria-hidden="true"
+          ></span>
+          <span class="map-help__legend-label">{{ entry.label }}</span>
+          <span class="map-help__legend-mode">mode {{ entry.customMode }}</span>
+        </li>
+      }
+    </ul>
+  </section>
+</div>

@@ -26,10 +26,17 @@ export interface FlightHomePoint {
   altitudeM: number;
 }
 
+export interface FlightModeChangePoint {
+  changedAtMs: number;
+  customMode: number;
+}
+
 export interface Flight extends FlightSummary {
   /** Unix ms → ({messageId}_{valueName} → field value). */
   messages: Record<string, Record<string, unknown>>;
   homePoints: FlightHomePoint[];
+  /** Unix ms when HEARTBEAT customMode changed (from log analysis). */
+  modeChangePoints?: FlightModeChangePoint[];
 }
 
 export interface TlogFlightResult {

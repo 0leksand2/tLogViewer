@@ -30,7 +30,23 @@
         [displayHeading]="displayHeading()"
         [displayTargetPath]="displayTargetPath()"
         [displayWind]="displayWind()"
+        [displayTrail]="displayTrail()"
+        [displayFullTrail]="displayFullTrail()"
+        [trailLengthSeconds]="trailLengthSeconds()"
       />
+    }
+  </app-modal>
+
+  <app-modal
+    title="Map display help"
+    [(open)]="helpModalOpen"
+    saveLabel="Close"
+    [showCancel]="false"
+    (saved)="onHelpClosed()"
+    (cancelled)="onHelpClosed()"
+  >
+    @if (helpModalOpen()) {
+      <app-map-display-help />
     }
   </app-modal>
 
@@ -52,6 +68,15 @@
       title="Settings"
     >
       <img src="assets/icons/gear.png" alt="" width="18" height="18" />
+    </button>
+    <button
+      type="button"
+      class="app-shell__toolbar-btn app-shell__toolbar-btn--icon"
+      (click)="openHelpModal()"
+      aria-label="Open map display help"
+      title="Help"
+    >
+      <img src="assets/icons/info.png" alt="" width="18" height="18" />
     </button>
   </div>
 
