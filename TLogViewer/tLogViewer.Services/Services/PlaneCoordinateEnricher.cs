@@ -278,10 +278,10 @@ public static class PlaneCoordinateEnricher
     {
         switch (value)
         {
-            case double d:
+            case double d when double.IsFinite(d):
                 result = d;
                 return true;
-            case float f:
+            case float f when float.IsFinite(f):
                 result = f;
                 return true;
             case int i:

@@ -103,6 +103,24 @@
   white-space: nowrap;
 }
 
+.tlog-load__option {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.15rem 0.1rem;
+  font-size: 0.8125rem;
+  color: var(--btn-text);
+  cursor: pointer;
+  user-select: none;
+
+  input {
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+}
+
 .tlog-load__status {
   margin: 0;
   font-size: 0.75rem;

@@ -24,7 +24,9 @@ public class TlogController : ControllerBase
     [HttpPost("upload")]
     [RequestSizeLimit(512_000_000)]
     [RequestFormLimits(MultipartBodyLengthLimit = 512_000_000)]
-    public ActionResult<TlogUploadResponse> Upload(IFormFile file)
+    public ActionResult<TlogUploadResponse> Upload(
+        IFormFile file,
+        [FromForm] bool splitIntoFlights = true)
     {
         if (file is null || file.Length == 0)
         {
@@ -41,7 +43,7 @@ public class TlogController : ControllerBase
         try
         {
             using var stream = file.OpenReadStream();
-            processResult = _processingService.Process(stream);
+            processResult = _processingService.Process(stream, splitIntoFlights);
         }
         catch (InvalidDataException ex)
         {

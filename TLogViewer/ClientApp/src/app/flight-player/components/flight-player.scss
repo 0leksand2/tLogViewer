@@ -191,6 +191,33 @@
   background: #c45c26;
 }
 
+.flight-player__marker--arm {
+  .flight-player__marker-tick {
+    width: 0.28rem;
+    height: 0.85rem;
+    border-radius: 2px;
+  }
+
+  &.flight-player__marker--armed .flight-player__marker-tick {
+    background: #1a7f37;
+  }
+
+  &.flight-player__marker--disarmed .flight-player__marker-tick {
+    background: #b42318;
+  }
+
+  &:hover,
+  &:focus-visible {
+    &.flight-player__marker--armed .flight-player__marker-tick {
+      background: #146c2e;
+    }
+
+    &.flight-player__marker--disarmed .flight-player__marker-tick {
+      background: #912018;
+    }
+  }
+}
+
 .flight-player__marker-popup {
   position: absolute;
   bottom: calc(100% + 0.35rem);

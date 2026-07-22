@@ -28,6 +28,7 @@ import {
   resolveActiveHomePoint,
   resolveFlightHomePoints,
   resolveFlightModeChangePoints,
+  resolveFlightArmChangePoints,
   resolvePlanePosition,
   resolvePlaybackPoint,
   resolvePositionTarget,
@@ -41,6 +42,7 @@ import {
 import { buildFlightTrail, TRAIL_SAMPLE_MS } from './map/utils/flight-trail';
 import { CurrentValue } from './core/services/current.value';
 import { FlightModeChangeService } from './core/services/flight-mode-change.service';
+import { FlightArmChangeService } from './core/services/flight-arm-change.service';
 
 @Component({
   selector: 'app-root',
@@ -63,6 +65,7 @@ export class App {
   private readonly tlogService = inject(TlogService);
   private readonly currentValue = inject(CurrentValue);
   private readonly flightModeChanges = inject(FlightModeChangeService);
+  private readonly flightArmChanges = inject(FlightArmChangeService);
   private readonly mapDisplaySettings = inject(MapDisplaySettingsService);
   private readonly flightSelection$ = new Subject<{ sessionId: string; flightId: string } | null>();
   private lastTrailBuildKey = '';
@@ -256,6 +259,7 @@ export class App {
       if (!sessionId || !flightId) {
         this.loadedFlight.set(null);
         this.flightModeChanges.clear();
+        this.flightArmChanges.clear();
         this.flightSelection$.next(null);
         return;
       }
@@ -287,7 +291,12 @@ export class App {
             flight.modeChangePoints,
             flight.messages,
           );
+          const armChangePoints = resolveFlightArmChangePoints(
+            flight.armChangePoints,
+            flight.messages,
+          );
           this.flightModeChanges.setMarkers(modeChangePoints);
+          this.flightArmChanges.setMarkers(armChangePoints);
           console.log('Flight home points', {
             flightId: flight.id,
             fromApi: flight.homePoints,
@@ -298,8 +307,14 @@ export class App {
             fromApi: flight.modeChangePoints,
             resolved: modeChangePoints,
           });
+          console.log('Flight arm change points', {
+            flightId: flight.id,
+            fromApi: flight.armChangePoints,
+            resolved: armChangePoints,
+          });
         } else {
           this.flightModeChanges.clear();
+          this.flightArmChanges.clear();
         }
       });
   }
@@ -353,6 +368,7 @@ export class App {
     this.flightSummaries.set(result.flights);
     this.loadedFlight.set(null);
     this.flightModeChanges.clear();
+    this.flightArmChanges.clear();
     this.selectedFlightId.set(result.flights[0]?.id ?? null);
   }
 

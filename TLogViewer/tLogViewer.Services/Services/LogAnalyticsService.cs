@@ -12,14 +12,13 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
 
     public IReadOnlyList<FlightDto> SplitIntoFlights(
         IReadOnlyList<MavMessageDto> messages,
-        double trimSeconds = 30)
+        double trimSeconds = 30,
+        bool splitIntoFlights = true)
     {
         if (messages.Count == 0)
         {
             return Array.Empty<FlightDto>();
         }
-
-        var margin = TimeSpan.FromSeconds(Math.Max(0, trimSeconds));
 
         var logStart = DateTimeOffset.MaxValue;
         var logEnd = DateTimeOffset.MinValue;
@@ -31,17 +30,27 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
         }
 
         var heartbeats = VehicleHeartbeatSelector.SelectFromMessages(messages);
-        var homeTimes = HomePositionTimeFinder.FindFromMessages(messages);
-        var flightIntervals = FlightSplitIntervalFinder.Find(
-            heartbeats,
-            homeTimes,
-            logStart,
-            logEnd,
-            margin);
+        IReadOnlyList<(DateTimeOffset Start, DateTimeOffset End)> flightIntervals;
 
-        if (flightIntervals.Count == 0)
+        if (splitIntoFlights)
         {
-            return Array.Empty<FlightDto>();
+            var margin = TimeSpan.FromSeconds(Math.Max(0, trimSeconds));
+            var homeTimes = HomePositionTimeFinder.FindFromMessages(messages);
+            flightIntervals = FlightSplitIntervalFinder.Find(
+                heartbeats,
+                homeTimes,
+                logStart,
+                logEnd,
+                margin);
+
+            if (flightIntervals.Count == 0)
+            {
+                return Array.Empty<FlightDto>();
+            }
+        }
+        else
+        {
+            flightIntervals = [(logStart, logEnd)];
         }
 
         var flights = new List<FlightDto>(flightIntervals.Count);
@@ -75,6 +84,7 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
 
             PlaneCoordinateEnricher.Enrich(byMillisecond);
             DerivedFieldsEnricher.ForwardFill(byMillisecond);
+            RemoveNonFiniteNumbers(byMillisecond);
 
             var homePoints = ExtractHomePoints(byMillisecond);
             if (homePoints.Count == 0)
@@ -83,6 +93,7 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
             }
 
             var modeChangePoints = ExtractModeChangePoints(byMillisecond);
+            var armChangePoints = ExtractArmChangePoints(byMillisecond);
 
             flights.Add(new FlightDto
             {
@@ -97,7 +108,8 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
                     static pair => pair.Key,
                     static pair => (IReadOnlyDictionary<string, object>)pair.Value),
                 HomePoints = homePoints,
-                ModeChangePoints = modeChangePoints
+                ModeChangePoints = modeChangePoints,
+                ArmChangePoints = armChangePoints
             });
         }
 
@@ -117,7 +129,7 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
             }
 
             var value = property.GetValue(message.Data);
-            if (value is null)
+            if (value is null || !IsJsonSafeValue(value))
             {
                 continue;
             }
@@ -126,6 +138,45 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
             atMs[FlightFieldIds.Format(message.MessageId, valueName)] = value;
         }
     }
+
+    /// <summary>
+    /// System.Text.Json cannot serialize float/double NaN or Infinity by default.
+    /// Drop those keys so GetFlight responses stay valid (common in unsplit full logs).
+    /// </summary>
+    private static void RemoveNonFiniteNumbers(Dictionary<long, Dictionary<string, object>> byMillisecond)
+    {
+        foreach (var atMs in byMillisecond.Values)
+        {
+            List<string>? removeKeys = null;
+            foreach (var (key, value) in atMs)
+            {
+                if (IsJsonSafeValue(value))
+                {
+                    continue;
+                }
+
+                (removeKeys ??= []).Add(key);
+            }
+
+            if (removeKeys is null)
+            {
+                continue;
+            }
+
+            foreach (var key in removeKeys)
+            {
+                atMs.Remove(key);
+            }
+        }
+    }
+
+    private static bool IsJsonSafeValue(object value) =>
+        value switch
+        {
+            float f => float.IsFinite(f),
+            double d => double.IsFinite(d),
+            _ => true
+        };
 
     /// <summary>
     /// Collects milliseconds where HEARTBEAT customMode differs from the previous value.
@@ -156,6 +207,55 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
         }
 
         return points;
+    }
+
+    /// <summary>
+    /// Collects milliseconds where HEARTBEAT armed state differs from the previous value.
+    /// </summary>
+    private static List<FlightArmChangePoint> ExtractArmChangePoints(
+        Dictionary<long, Dictionary<string, object>> byMillisecond)
+    {
+        var points = new List<FlightArmChangePoint>();
+        bool? lastArmed = null;
+
+        foreach (var ms in byMillisecond.Keys.OrderBy(static key => key))
+        {
+            if (!TryReadArmed(byMillisecond[ms], out var armed))
+            {
+                continue;
+            }
+
+            if (lastArmed.HasValue && armed != lastArmed.Value)
+            {
+                points.Add(new FlightArmChangePoint
+                {
+                    ChangedAtMs = ms,
+                    Armed = armed
+                });
+            }
+
+            lastArmed = armed;
+        }
+
+        return points;
+    }
+
+    private static bool TryReadArmed(IReadOnlyDictionary<string, object> fields, out bool armed)
+    {
+        armed = false;
+        if (!fields.TryGetValue(FlightFieldIds.Armed, out var value))
+        {
+            return false;
+        }
+
+        switch (value)
+        {
+            case bool b:
+                armed = b;
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static bool TryReadCustomMode(IReadOnlyDictionary<string, object> fields, out uint mode)
@@ -331,10 +431,10 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
     {
         switch (value)
         {
-            case double d:
+            case double d when double.IsFinite(d):
                 result = d;
                 return true;
-            case float f:
+            case float f when float.IsFinite(f):
                 result = f;
                 return true;
             case int i:

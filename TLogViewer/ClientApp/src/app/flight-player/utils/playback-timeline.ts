@@ -215,6 +215,79 @@ export function resolveFlightModeChangePoints(
   return resolved.sort((a, b) => a.changedAtMs - b.changedAtMs);
 }
 
+export interface PlaybackArmChangePoint {
+  changedAtMs: number;
+  armed: boolean;
+}
+
+/** Build arm/disarm timeline from flattened HEARTBEAT armed when API omits points. */
+export function extractArmChangePointsFromMessages(
+  messages: Record<string, Record<string, unknown>> | null | undefined,
+): PlaybackArmChangePoint[] {
+  if (!messages) {
+    return [];
+  }
+
+  const points: PlaybackArmChangePoint[] = [];
+  let lastArmed: boolean | null = null;
+
+  for (const changedAtMs of sortedPlaybackPoints(messages)) {
+    const fields = messages[String(changedAtMs)];
+    if (!fields) {
+      continue;
+    }
+
+    const armed = asBoolean(fields[FlightFieldIds.Armed]);
+    if (armed === null) {
+      continue;
+    }
+
+    if (lastArmed !== null && armed !== lastArmed) {
+      points.push({ changedAtMs, armed });
+    }
+
+    lastArmed = armed;
+  }
+
+  return points;
+}
+
+export function resolveFlightArmChangePoints(
+  armChangePoints: readonly PlaybackArmChangePoint[] | null | undefined,
+  messages: Record<string, Record<string, unknown>> | null | undefined,
+): PlaybackArmChangePoint[] {
+  const fromApi = (armChangePoints ?? [])
+    .map((point) => {
+      const raw = point as { changedAtMs?: unknown; armed?: unknown };
+      return {
+        changedAtMs: asFiniteNumber(raw.changedAtMs) ?? NaN,
+        armed: asBoolean(raw.armed),
+      };
+    })
+    .filter(
+      (point): point is { changedAtMs: number; armed: boolean } =>
+        Number.isFinite(point.changedAtMs) && point.armed !== null,
+    );
+
+  const resolved =
+    fromApi.length > 0 ? fromApi : extractArmChangePointsFromMessages(messages);
+
+  return resolved.sort((a, b) => a.changedAtMs - b.changedAtMs);
+}
+
+function asBoolean(value: unknown): boolean | null {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (value === 0 || value === '0' || value === 'false') {
+    return false;
+  }
+  if (value === 1 || value === '1' || value === 'true') {
+    return true;
+  }
+  return null;
+}
+
 /** Active home for the current playback millisecond (latest change at or before playback). */
 export function resolveActiveHomePoint(
   homePoints: readonly PlaybackHomePoint[] | null | undefined,

@@ -21,6 +21,15 @@
         Choose .tlog…
       </button>
 
+      <label class="tlog-load__option">
+        <input
+          type="checkbox"
+          [checked]="splitIntoFlights()"
+          (change)="onSplitIntoFlightsChange($event)"
+        />
+        <span>Split into flights</span>
+      </label>
+
       @if (selectedFile(); as file) {
         <p class="tlog-load__file" [title]="file.name">{{ file.name }}</p>
         <button

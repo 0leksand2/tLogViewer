@@ -60,6 +60,22 @@
             </span>
           </button>
         }
+        @for (marker of armChangeMarkers(); track marker.changedAtMs) {
+          <button
+            type="button"
+            class="flight-player__marker flight-player__marker--arm"
+            [class.flight-player__marker--armed]="marker.armed"
+            [class.flight-player__marker--disarmed]="!marker.armed"
+            [style.left.%]="marker.percent"
+            [attr.aria-label]="marker.label"
+            (click)="seekToArmMarker(marker.changedAtMs)"
+          >
+            <span class="flight-player__marker-tick" aria-hidden="true"></span>
+            <span class="flight-player__marker-popup" role="tooltip">
+              {{ marker.label }}
+            </span>
+          </button>
+        }
       </div>
       <input
         type="range"

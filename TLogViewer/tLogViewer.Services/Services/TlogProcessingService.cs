@@ -15,13 +15,13 @@ public sealed class TlogProcessingService : ITlogProcessingService
         _analytics = analytics;
     }
 
-    public TlogParseResult Process(string filePath)
+    public TlogParseResult Process(string filePath, bool splitIntoFlights = true)
     {
         using var stream = File.OpenRead(filePath);
-        return Process(stream);
+        return Process(stream, splitIntoFlights);
     }
 
-    public TlogParseResult Process(Stream stream)
+    public TlogParseResult Process(Stream stream, bool splitIntoFlights = true)
     {
         Stream readable = stream;
         MemoryStream? buffer = null;
@@ -61,7 +61,7 @@ public sealed class TlogProcessingService : ITlogProcessingService
 
             messages.AddRange(derived.TakeSamples());
 
-            var flights = _analytics.SplitIntoFlights(messages);
+            var flights = _analytics.SplitIntoFlights(messages, splitIntoFlights: splitIntoFlights);
 
             return new TlogParseResult
             {

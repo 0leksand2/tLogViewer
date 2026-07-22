@@ -10,5 +10,6 @@ public interface ILogAnalyticsService
     /// </summary>
     IReadOnlyList<FlightDto> SplitIntoFlights(
         IReadOnlyList<MavMessageDto> messages,
-        double trimSeconds = 30);
+        double trimSeconds = 30,
+        bool splitIntoFlights = true);
 }

@@ -30,6 +30,8 @@ export class TlogLoadMenuComponent {
   protected readonly uploading = signal(false);
   protected readonly statusMessage = signal<string | null>(null);
   protected readonly statusTone = signal<'ok' | 'error' | null>(null);
+  /** When true, log is split into flights on arm cycles; default on. */
+  protected readonly splitIntoFlights = signal(true);
 
   toggleMenu(): void {
     this.menuOpen.update((open) => !open);
@@ -69,6 +71,11 @@ export class TlogLoadMenuComponent {
     this.statusTone.set(null);
   }
 
+  onSplitIntoFlightsChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.splitIntoFlights.set(input.checked);
+  }
+
   uploadSelected(): void {
     const file = this.selectedFile();
     if (!file || this.uploading()) {
@@ -79,7 +86,7 @@ export class TlogLoadMenuComponent {
     this.statusMessage.set('Uploading…');
     this.statusTone.set(null);
 
-    this.tlogService.upload(file).subscribe({
+    this.tlogService.upload(file, this.splitIntoFlights()).subscribe({
       next: (result) => {
         this.uploading.set(false);
         this.statusMessage.set(`Uploaded ${result.fileName} (${result.flightCount} flight(s))`);

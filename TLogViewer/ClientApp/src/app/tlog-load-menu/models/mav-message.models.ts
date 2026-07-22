@@ -31,12 +31,20 @@ export interface FlightModeChangePoint {
   customMode: number;
 }
 
+export interface FlightArmChangePoint {
+  changedAtMs: number;
+  /** true = armed, false = disarmed. */
+  armed: boolean;
+}
+
 export interface Flight extends FlightSummary {
   /** Unix ms → ({messageId}_{valueName} → field value). */
   messages: Record<string, Record<string, unknown>>;
   homePoints: FlightHomePoint[];
   /** Unix ms when HEARTBEAT customMode changed (from log analysis). */
   modeChangePoints?: FlightModeChangePoint[];
+  /** Unix ms when HEARTBEAT armed state changed (arm / disarm). */
+  armChangePoints?: FlightArmChangePoint[];
 }
 
 export interface TlogFlightResult {
