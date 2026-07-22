@@ -7,9 +7,9 @@ namespace tLogViewer.Services.Services;
 /// </summary>
 public static class DerivedFieldsEnricher
 {
-    private const string LinkQualityKey = "998_linkQualityGcs";
-    private const string TimeSinceArmKey = "998_timeSinceArmSec";
-    private const string ArmedKey = "0_armed";
+    private static readonly string LinkQualityKey = FlightFieldIds.LinkQualityGcs;
+    private static readonly string TimeSinceArmKey = FlightFieldIds.TimeSinceArmSec;
+    private static readonly string ArmedKey = FlightFieldIds.Armed;
 
     public static void ForwardFill(Dictionary<long, Dictionary<string, object>> byMillisecond)
     {

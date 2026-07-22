@@ -1,4 +1,5 @@
 import { flightModeColor } from '../../core/flight-mode';
+import { FlightFieldIds } from '../../core/flight-field-ids';
 
 /** Sample trail vertices every 100 ms of log time. */
 export const TRAIL_SAMPLE_MS = 100;
@@ -51,16 +52,16 @@ function findPointIndexAtOrBefore(points: readonly number[], targetMs: number): 
 }
 
 function readLatLon(fields: Record<string, unknown>): { lat: number; lon: number } | null {
-  const lat = asFiniteNumber(fields['lat']);
-  const lon = asFiniteNumber(fields['lon']);
+  const lat = asFiniteNumber(fields[FlightFieldIds.AliasLat]);
+  const lon = asFiniteNumber(fields[FlightFieldIds.AliasLon]);
   if (lat !== null && lon !== null) {
     return { lat, lon };
   }
 
   for (const [latKey, lonKey] of [
-    ['33_latitudeDeg', '33_longitudeDeg'],
-    ['24_latitudeDeg', '24_longitudeDeg'],
-    ['87_latitudeDeg', '87_longitudeDeg'],
+    [FlightFieldIds.GlobalPosLat, FlightFieldIds.GlobalPosLon],
+    [FlightFieldIds.GpsRawLat, FlightFieldIds.GpsRawLon],
+    [FlightFieldIds.PositionTargetLat, FlightFieldIds.PositionTargetLon],
   ] as const) {
     const fallbackLat = asFiniteNumber(fields[latKey]);
     const fallbackLon = asFiniteNumber(fields[lonKey]);
@@ -113,7 +114,7 @@ export function resolveFlightModeAtOrBefore(
     if (!fields) {
       continue;
     }
-    const mode = asFiniteNumber(fields['0_customMode']);
+    const mode = asFiniteNumber(fields[FlightFieldIds.CustomMode]);
     if (mode !== null) {
       return Math.trunc(mode);
     }

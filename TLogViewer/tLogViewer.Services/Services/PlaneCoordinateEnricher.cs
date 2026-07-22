@@ -1,35 +1,33 @@
 namespace tLogViewer.Services.Services;
 
 /// <summary>
-/// Adds <c>lat</c> / <c>lon</c>, <c>yaw</c>, <c>windDir</c>, and target fields to each flight millisecond.
+/// Adds plane/target/wind alias fields (997_*) to each flight millisecond.
 /// Plane position from messages that change over time; yaw from VFR_HUD heading (message 74).
 /// Wind direction from WIND (168). Absolute target from POSITION_TARGET_GLOBAL_INT (87); otherwise derived from
 /// NAV_CONTROLLER_OUTPUT (62) target bearing + waypoint distance.
 /// </summary>
 public static class PlaneCoordinateEnricher
 {
-    private const string LatitudeSuffix = "_latitudeDeg";
-    private const string LongitudeSuffix = "_longitudeDeg";
-    private const string VfrHudHeadingKey = "74_headingDeg";
-    private const string PositionTargetLatKey = "87_latitudeDeg";
-    private const string PositionTargetLonKey = "87_longitudeDeg";
-    private const string PositionTargetYawKey = "87_yawDeg";
-    private const string PositionTargetAltKey = "87_altitudeM";
-    private const string NavTargetBearingKey = "62_targetBearing";
-    private const string NavBearingKey = "62_navBearing";
-    private const string NavWpDistKey = "62_wpDistM";
-    private const string WindDirectionKey = "168_directionDeg";
-    private const string WindSpeedKey = "168_speedMS";
+    private static readonly string VfrHudHeadingKey = FlightFieldIds.VfrHeadingDeg;
+    private static readonly string PositionTargetLatKey = FlightFieldIds.PositionTargetLat;
+    private static readonly string PositionTargetLonKey = FlightFieldIds.PositionTargetLon;
+    private static readonly string PositionTargetYawKey = FlightFieldIds.PositionTargetYaw;
+    private static readonly string PositionTargetAltKey = FlightFieldIds.PositionTargetAlt;
+    private static readonly string NavTargetBearingKey = FlightFieldIds.NavTargetBearing;
+    private static readonly string NavBearingKey = FlightFieldIds.NavBearing;
+    private static readonly string NavWpDistKey = FlightFieldIds.NavWpDist;
+    private static readonly string WindDirectionKey = FlightFieldIds.WindDirection;
+    private static readonly string WindSpeedKey = FlightFieldIds.WindSpeed;
     private const double EarthRadiusM = 6_371_000;
 
-    /// <summary>Lower = preferred vehicle position source.</summary>
-    private static readonly Dictionary<string, int> SourcePriority = new(StringComparer.Ordinal)
-    {
-        ["33"] = 0,  // GLOBAL_POSITION_INT
-        ["24"] = 1,  // GPS_RAW_INT
-        ["87"] = 2,  // POSITION_TARGET_GLOBAL_INT
-        ["73"] = 3,  // MISSION_ITEM_INT
-    };
+    /// <summary>Candidate lat/lon key pairs, preferred order.</summary>
+    private static readonly (string LatKey, string LonKey, string MessageId, int Priority)[] LatLonSources =
+    [
+        (FlightFieldIds.GlobalPosLat, FlightFieldIds.GlobalPosLon, "33", 0),
+        (FlightFieldIds.GpsRawLat, FlightFieldIds.GpsRawLon, "24", 1),
+        (FlightFieldIds.PositionTargetLat, FlightFieldIds.PositionTargetLon, "87", 2),
+        (FlightFieldIds.Format("73", "latitudeDeg"), FlightFieldIds.Format("73", "longitudeDeg"), "73", 3),
+    ];
 
     /// <summary>Home / EKF origin — excluded from plane track selection.</summary>
     private static readonly HashSet<string> ExcludedMessageIds = new(StringComparer.Ordinal)
@@ -154,54 +152,54 @@ public static class PlaneCoordinateEnricher
 
             if (lastLat.HasValue && lastLon.HasValue)
             {
-                atMs["lat"] = lastLat.Value;
-                atMs["lon"] = lastLon.Value;
+                atMs[FlightFieldIds.AliasLat] = lastLat.Value;
+                atMs[FlightFieldIds.AliasLon] = lastLon.Value;
             }
 
             if (lastYaw.HasValue)
             {
-                atMs["yaw"] = lastYaw.Value;
+                atMs[FlightFieldIds.AliasYaw] = lastYaw.Value;
             }
 
             if (lastTargetLat.HasValue && lastTargetLon.HasValue)
             {
-                atMs["targetLat"] = lastTargetLat.Value;
-                atMs["targetLon"] = lastTargetLon.Value;
+                atMs[FlightFieldIds.AliasTargetLat] = lastTargetLat.Value;
+                atMs[FlightFieldIds.AliasTargetLon] = lastTargetLon.Value;
             }
 
             if (lastTargetYaw.HasValue)
             {
-                atMs["targetYaw"] = lastTargetYaw.Value;
+                atMs[FlightFieldIds.AliasTargetYaw] = lastTargetYaw.Value;
             }
 
             if (lastTargetAlt.HasValue)
             {
-                atMs["targetAlt"] = lastTargetAlt.Value;
+                atMs[FlightFieldIds.AliasTargetAlt] = lastTargetAlt.Value;
             }
 
             if (lastNavTargetBearing.HasValue)
             {
-                atMs["targetBearing"] = lastNavTargetBearing.Value;
+                atMs[FlightFieldIds.AliasTargetBearing] = lastNavTargetBearing.Value;
             }
 
             if (lastNavBearing.HasValue)
             {
-                atMs["navBearing"] = lastNavBearing.Value;
+                atMs[FlightFieldIds.AliasNavBearing] = lastNavBearing.Value;
             }
 
             if (lastNavWpDistM.HasValue)
             {
-                atMs["wpDistM"] = lastNavWpDistM.Value;
+                atMs[FlightFieldIds.AliasWpDistM] = lastNavWpDistM.Value;
             }
 
             if (lastWindDir.HasValue)
             {
-                atMs["windDir"] = lastWindDir.Value;
+                atMs[FlightFieldIds.AliasWindDir] = lastWindDir.Value;
             }
 
             if (lastWindSpeed.HasValue)
             {
-                atMs["windSpeed"] = lastWindSpeed.Value;
+                atMs[FlightFieldIds.AliasWindSpeed] = lastWindSpeed.Value;
             }
         }
     }
@@ -209,11 +207,15 @@ public static class PlaneCoordinateEnricher
     private static (string LatKey, string LonKey)? SelectChangingSource(
         Dictionary<long, Dictionary<string, object>> byMillisecond)
     {
-        var candidates = DiscoverLatLonPairs(byMillisecond)
-            .Where(pair => !ExcludedMessageIds.Contains(GetMessageId(pair.LatKey)))
-            .Select(pair => (Pair: pair, Distinct: CountDistinctPositions(byMillisecond, pair.LatKey, pair.LonKey)))
+        var candidates = LatLonSources
+            .Where(static source => !ExcludedMessageIds.Contains(source.MessageId))
+            .Select(source => (
+                LatKey: source.LatKey,
+                LonKey: source.LonKey,
+                Priority: source.Priority,
+                Distinct: CountDistinctPositions(byMillisecond, source.LatKey, source.LonKey)))
             .Where(static item => item.Distinct > 1)
-            .OrderBy(item => GetPriority(GetMessageId(item.Pair.LatKey)))
+            .OrderBy(static item => item.Priority)
             .ThenByDescending(static item => item.Distinct)
             .ToList();
 
@@ -222,27 +224,8 @@ public static class PlaneCoordinateEnricher
             return null;
         }
 
-        var best = candidates[0].Pair;
+        var best = candidates[0];
         return (best.LatKey, best.LonKey);
-    }
-
-    private static IEnumerable<(string LatKey, string LonKey)> DiscoverLatLonPairs(
-        Dictionary<long, Dictionary<string, object>> byMillisecond)
-    {
-        var latKeys = byMillisecond.Values
-            .SelectMany(static fields => fields.Keys)
-            .Where(static key => key.EndsWith(LatitudeSuffix, StringComparison.Ordinal))
-            .Distinct(StringComparer.Ordinal);
-
-        foreach (var latKey in latKeys)
-        {
-            var messageId = GetMessageId(latKey);
-            var lonKey = $"{messageId}{LongitudeSuffix}";
-            if (byMillisecond.Values.Any(fields => fields.ContainsKey(lonKey)))
-            {
-                yield return (latKey, lonKey);
-            }
-        }
     }
 
     private static int CountDistinctPositions(
@@ -345,12 +328,6 @@ public static class PlaneCoordinateEnricher
 
         return (lat2 * 180.0 / Math.PI, lon2 * 180.0 / Math.PI);
     }
-
-    private static string GetMessageId(string latKey) =>
-        latKey[..^LatitudeSuffix.Length];
-
-    private static int GetPriority(string messageId) =>
-        SourcePriority.TryGetValue(messageId, out var priority) ? priority : 100;
 
     private static long Quantize(double degrees) => (long)Math.Round(degrees * 1e7);
 

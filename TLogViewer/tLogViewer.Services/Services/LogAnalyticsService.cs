@@ -105,7 +105,7 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
     }
 
     /// <summary>
-    /// Flattens message payload into keys named <c>{messageId}_{valueName}</c>.
+    /// Flattens message payload into keys named <c>{messageId}_{fff}</c> (numeric field id).
     /// </summary>
     private static void PushFlattenedValues(Dictionary<string, object> atMs, MavMessageDto message)
     {
@@ -123,12 +123,12 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
             }
 
             var valueName = PropertyNaming.ConvertName(property.Name);
-            atMs[$"{message.MessageId}_{valueName}"] = value;
+            atMs[FlightFieldIds.Format(message.MessageId, valueName)] = value;
         }
     }
 
     /// <summary>
-    /// Collects milliseconds where HEARTBEAT <c>0_customMode</c> differs from the previous value.
+    /// Collects milliseconds where HEARTBEAT customMode differs from the previous value.
     /// </summary>
     private static List<FlightModeChangePoint> ExtractModeChangePoints(
         Dictionary<long, Dictionary<string, object>> byMillisecond)
@@ -161,7 +161,7 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
     private static bool TryReadCustomMode(IReadOnlyDictionary<string, object> fields, out uint mode)
     {
         mode = 0;
-        if (!fields.TryGetValue("0_customMode", out var value))
+        if (!fields.TryGetValue(FlightFieldIds.CustomMode, out var value))
         {
             return false;
         }
@@ -303,8 +303,8 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
         longitudeDeg = 0;
         altitudeM = 0;
 
-        if (!fields.TryGetValue("242_latitudeDeg", out var latObj)
-            || !fields.TryGetValue("242_longitudeDeg", out var lonObj))
+        if (!fields.TryGetValue(FlightFieldIds.HomeLatitudeDeg, out var latObj)
+            || !fields.TryGetValue(FlightFieldIds.HomeLongitudeDeg, out var lonObj))
         {
             return false;
         }
@@ -319,7 +319,7 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
             return false;
         }
 
-        if (fields.TryGetValue("242_altitudeM", out var altObj))
+        if (fields.TryGetValue(FlightFieldIds.HomeAltitudeM, out var altObj))
         {
             TryAsDouble(altObj, out altitudeM);
         }

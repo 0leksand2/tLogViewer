@@ -1,3 +1,5 @@
+import { FlightFieldIds } from '../../core/flight-field-ids';
+
 /** Sorted Unix-ms keys from a flight messages dictionary. */
 export function sortedPlaybackPoints(
   messages: Record<string, Record<string, unknown>> | null | undefined,
@@ -90,9 +92,9 @@ export function extractHomePointsFromMessages(
       continue;
     }
 
-    const latitudeDeg = asFiniteNumber(fields['242_latitudeDeg']);
-    const longitudeDeg = asFiniteNumber(fields['242_longitudeDeg']);
-    const altitudeM = asFiniteNumber(fields['242_altitudeM']);
+    const latitudeDeg = asFiniteNumber(fields[FlightFieldIds.HomeLatitudeDeg]);
+    const longitudeDeg = asFiniteNumber(fields[FlightFieldIds.HomeLongitudeDeg]);
+    const altitudeM = asFiniteNumber(fields[FlightFieldIds.HomeAltitudeM]);
     if (latitudeDeg === null || longitudeDeg === null) {
       continue;
     }
@@ -154,7 +156,7 @@ export interface PlaybackModeChangePoint {
   customMode: number;
 }
 
-/** Build mode-change timeline from flattened HEARTBEAT `0_customMode` when API omits points. */
+/** Build mode-change timeline from flattened HEARTBEAT customMode when API omits points. */
 export function extractModeChangePointsFromMessages(
   messages: Record<string, Record<string, unknown>> | null | undefined,
 ): PlaybackModeChangePoint[] {
@@ -171,7 +173,7 @@ export function extractModeChangePointsFromMessages(
       continue;
     }
 
-    const customMode = asFiniteNumber(fields['0_customMode']);
+    const customMode = asFiniteNumber(fields[FlightFieldIds.CustomMode]);
     if (customMode === null) {
       continue;
     }
@@ -259,16 +261,20 @@ export function resolvePlanePosition(
     return null;
   }
 
-  const lat = asFiniteNumber(fields['lat']);
-  const lon = asFiniteNumber(fields['lon']);
+  const lat = asFiniteNumber(fields[FlightFieldIds.AliasLat]);
+  const lon = asFiniteNumber(fields[FlightFieldIds.AliasLon]);
   const yaw =
-    asFiniteNumber(fields['yaw']) ?? asFiniteNumber(fields['74_headingDeg']);
+    asFiniteNumber(fields[FlightFieldIds.AliasYaw]) ??
+    asFiniteNumber(fields[FlightFieldIds.VfrHeadingDeg]);
   const navBearing =
-    asFiniteNumber(fields['navBearing']) ?? asFiniteNumber(fields['62_navBearing']);
+    asFiniteNumber(fields[FlightFieldIds.AliasNavBearing]) ??
+    asFiniteNumber(fields[FlightFieldIds.NavBearing]);
   const windDir =
-    asFiniteNumber(fields['windDir']) ?? asFiniteNumber(fields['168_directionDeg']);
+    asFiniteNumber(fields[FlightFieldIds.AliasWindDir]) ??
+    asFiniteNumber(fields[FlightFieldIds.WindDirection]);
   const windSpeed =
-    asFiniteNumber(fields['windSpeed']) ?? asFiniteNumber(fields['168_speedMS']);
+    asFiniteNumber(fields[FlightFieldIds.AliasWindSpeed]) ??
+    asFiniteNumber(fields[FlightFieldIds.WindSpeed]);
 
   if (lat !== null && lon !== null) {
     return { lat, lon, yaw, navBearing, windDir, windSpeed };
@@ -276,9 +282,9 @@ export function resolvePlanePosition(
 
   // Fallback for flights processed before lat/lon enrichment.
   for (const [latKey, lonKey] of [
-    ['33_latitudeDeg', '33_longitudeDeg'],
-    ['24_latitudeDeg', '24_longitudeDeg'],
-    ['87_latitudeDeg', '87_longitudeDeg'],
+    [FlightFieldIds.GlobalPosLat, FlightFieldIds.GlobalPosLon],
+    [FlightFieldIds.GpsRawLat, FlightFieldIds.GpsRawLon],
+    [FlightFieldIds.PositionTargetLat, FlightFieldIds.PositionTargetLon],
   ] as const) {
     const fallbackLat = asFiniteNumber(fields[latKey]);
     const fallbackLon = asFiniteNumber(fields[lonKey]);
@@ -305,16 +311,19 @@ export function resolvePositionTarget(
   }
 
   const lat =
-    asFiniteNumber(fields['targetLat']) ?? asFiniteNumber(fields['87_latitudeDeg']);
+    asFiniteNumber(fields[FlightFieldIds.AliasTargetLat]) ??
+    asFiniteNumber(fields[FlightFieldIds.PositionTargetLat]);
   const lon =
-    asFiniteNumber(fields['targetLon']) ?? asFiniteNumber(fields['87_longitudeDeg']);
+    asFiniteNumber(fields[FlightFieldIds.AliasTargetLon]) ??
+    asFiniteNumber(fields[FlightFieldIds.PositionTargetLon]);
   const yaw =
-    asFiniteNumber(fields['targetYaw']) ??
-    asFiniteNumber(fields['targetBearing']) ??
-    asFiniteNumber(fields['87_yawDeg']) ??
-    asFiniteNumber(fields['62_targetBearing']);
+    asFiniteNumber(fields[FlightFieldIds.AliasTargetYaw]) ??
+    asFiniteNumber(fields[FlightFieldIds.AliasTargetBearing]) ??
+    asFiniteNumber(fields[FlightFieldIds.PositionTargetYaw]) ??
+    asFiniteNumber(fields[FlightFieldIds.NavTargetBearing]);
   const altitudeM =
-    asFiniteNumber(fields['targetAlt']) ?? asFiniteNumber(fields['87_altitudeM']);
+    asFiniteNumber(fields[FlightFieldIds.AliasTargetAlt]) ??
+    asFiniteNumber(fields[FlightFieldIds.PositionTargetAlt]);
 
   if (lat === null || lon === null) {
     return null;
@@ -327,7 +336,10 @@ export function resolvePositionTarget(
   return { lat, lon, yaw, altitudeM };
 }
 
-const SPARSE_DERIVED_KEYS = ['998_linkQualityGcs', '998_timeSinceArmSec'] as const;
+const SPARSE_DERIVED_KEYS = [
+  FlightFieldIds.LinkQualityGcs,
+  FlightFieldIds.TimeSinceArmSec,
+] as const;
 
 /**
  * Copies the latest DERIVED (998) fields at or before `playbackMs` into `values`
