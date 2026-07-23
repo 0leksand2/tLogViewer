@@ -9,6 +9,7 @@ namespace tLogViewer.Services.Services;
 public static class PlaneCoordinateEnricher
 {
     private static readonly string VfrHudHeadingKey = FlightFieldIds.VfrHeadingDeg;
+    private static readonly string VfrHudClimbKey = FlightFieldIds.VfrClimbMS;
     private static readonly string PositionTargetLatKey = FlightFieldIds.PositionTargetLat;
     private static readonly string PositionTargetLonKey = FlightFieldIds.PositionTargetLon;
     private static readonly string PositionTargetYawKey = FlightFieldIds.PositionTargetYaw;
@@ -48,6 +49,7 @@ public static class PlaneCoordinateEnricher
         double? lastLat = null;
         double? lastLon = null;
         double? lastYaw = null;
+        double? lastVerticalSpeed = null;
         double? lastTargetLat = null;
         double? lastTargetLon = null;
         double? lastTargetYaw = null;
@@ -81,6 +83,11 @@ public static class PlaneCoordinateEnricher
             if (atMs.TryGetValue(VfrHudHeadingKey, out var yawObj) && TryAsDouble(yawObj, out var yaw))
             {
                 lastYaw = NormalizeHeading(yaw);
+            }
+
+            if (atMs.TryGetValue(VfrHudClimbKey, out var climbObj) && TryAsDouble(climbObj, out var climb))
+            {
+                lastVerticalSpeed = climb;
             }
 
             if (TryReadCoordinate(atMs, PositionTargetLatKey, PositionTargetLonKey, out var targetLat, out var targetLon))
@@ -159,6 +166,11 @@ public static class PlaneCoordinateEnricher
             if (lastYaw.HasValue)
             {
                 atMs[FlightFieldIds.AliasYaw] = lastYaw.Value;
+            }
+
+            if (lastVerticalSpeed.HasValue)
+            {
+                atMs[FlightFieldIds.VerticalSpeed] = lastVerticalSpeed.Value;
             }
 
             if (lastTargetLat.HasValue && lastTargetLon.HasValue)

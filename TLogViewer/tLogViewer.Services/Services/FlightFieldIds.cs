@@ -645,6 +645,8 @@ public static class FlightFieldIds
     public const string HomeLongitudeDeg = "242_003";
     public const string HomeAltitudeM = "242_001";
     public const string VfrHeadingDeg = "74_005";
+    public const string VfrClimbMS = "74_003";
+    public const string VerticalSpeed = "999_397";
     public const string PositionTargetLat = "87_006";
     public const string PositionTargetLon = "87_007";
     public const string PositionTargetYaw = "87_014";
