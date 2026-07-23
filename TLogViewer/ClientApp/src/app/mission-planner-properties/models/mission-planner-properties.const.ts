@@ -186,7 +186,7 @@ export const MISSION_PLANNER_PROPERTIES: readonly MissionPlannerProperty[] = [
   { key: 'current9', label: "Bat9 Current (Amps)", propertyValue: '999_161' },
   { key: 'DistFromMovingBase', label: "Dist to Moving Base (dist)", propertyValue: '999_003' },
   { key: 'DistRSSIRemain', label: "Sik Radio est dist (m)", propertyValue: '999_004' },
-  { key: 'DistToHome', label: "Dist to Home (dist)", propertyValue: '999_005' },
+  { key: 'DistToHome', label: "Dist to Home (dist)", propertyValue: '998_004' },
   { key: 'distTraveled', label: "Dist Traveled (dist)", propertyValue: '999_162' },
   { key: 'efi_baro', label: "EFI Baro Pressure (kPa)", propertyValue: '999_163' },
   { key: 'efi_exhausttemp', propertyValue: '999_164' },

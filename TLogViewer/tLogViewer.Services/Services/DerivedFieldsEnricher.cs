@@ -12,6 +12,7 @@ public static class DerivedFieldsEnricher
     private static readonly string TimeSinceArmKey = FlightFieldIds.TimeSinceArmSec;
     private static readonly string AzToMavKey = FlightFieldIds.AzToMav;
     private static readonly string DistToHomeKey = FlightFieldIds.DistToHome;
+    private static readonly string DistToHomeLegacyKey = "999_005";
     private static readonly string ArmedKey = FlightFieldIds.Armed;
     private static readonly string HomeLatKey = FlightFieldIds.HomeLatitudeDeg;
     private static readonly string HomeLonKey = FlightFieldIds.HomeLongitudeDeg;
@@ -82,6 +83,8 @@ public static class DerivedFieldsEnricher
             }
 
             atMs[DistToHomeKey] = HaversineDistanceM(homeLat.Value, homeLon.Value, planeLat, planeLon);
+            // Also write legacy Mission Planner catalog id so older UI selections keep working.
+            atMs[DistToHomeLegacyKey] = atMs[DistToHomeKey];
             atMs[AzToMavKey] = InitialBearingDeg(homeLat.Value, homeLon.Value, planeLat, planeLon);
         }
     }
