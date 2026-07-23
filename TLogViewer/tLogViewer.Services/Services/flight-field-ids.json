@@ -181,7 +181,9 @@
     },
     "998": {
       "linkQualityGcs": 1,
-      "timeSinceArmSec": 2
+      "timeSinceArmSec": 2,
+      "azToMav": 3,
+      "distToHome": 4
     },
     "999": {
       "AOA": 1,
@@ -759,11 +761,13 @@
     "windSpeed": "997_012",
     "998_linkQualityGcs": "998_001",
     "998_timeSinceArmSec": "998_002",
+    "998_azToMav": "998_003",
+    "998_distToHome": "998_004",
     "999_AOA": "999_001",
-    "999_AZToMAV": "999_002",
+    "999_AZToMAV": "998_003",
     "999_DistFromMovingBase": "999_003",
     "999_DistRSSIRemain": "999_004",
-    "999_DistToHome": "999_005",
+    "999_DistToHome": "998_004",
     "999_ELToMAV": "999_006",
     "999_GeoFenceDist": "999_007",
     "999_QNH": "999_008",

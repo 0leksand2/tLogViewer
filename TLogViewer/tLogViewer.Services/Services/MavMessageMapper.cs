@@ -194,9 +194,101 @@ public static class MavMessageMapper
                 Severity = (byte)m.Severity,
                 Text = m.Text
             }),
+            BatteryStatus m => Envelope("batteryStatus", messageId, timeUtc, new BatteryStatusData
+            {
+                Id = m.Id,
+                BatteryRemainingPct = m.BatteryRemainingPct,
+                VoltagesMv = m.VoltagesMv.ToArray(),
+                VoltagesExtMv = m.VoltagesExtMv.ToArray(),
+                CurrentBatteryA = m.CurrentBatteryCA < 0 ? null : m.CurrentBatteryCA / 100.0,
+                TemperatureC = m.TemperatureCdegC == short.MaxValue
+                    ? null
+                    : m.TemperatureCdegC / 100.0,
+                CurrentConsumedMah = m.CurrentConsumedMah < 0 ? null : m.CurrentConsumedMah
+            }),
+            ScaledImu m => Envelope("scaledImu", messageId, timeUtc, new ScaledImuData
+            {
+                ImuIndex = ScaledImuIndex(messageId),
+                XAccG = m.XAccMg / 1000.0,
+                YAccG = m.YAccMg / 1000.0,
+                ZAccG = m.ZAccMg / 1000.0,
+                XGyroRadS = m.XGyroMradS / 1000.0,
+                YGyroRadS = m.YGyroMradS / 1000.0,
+                ZGyroRadS = m.ZGyroMradS / 1000.0,
+                XMagMgauss = m.XMagMgauss,
+                YMagMgauss = m.YMagMgauss,
+                ZMagMgauss = m.ZMagMgauss,
+                TemperatureC = m.TemperatureCdegC is { } t ? t / 100.0 : null
+            }),
+            RawImu m => Envelope("rawImu", messageId, timeUtc, new RawImuData
+            {
+                Id = m.Id,
+                XAcc = m.XAcc,
+                YAcc = m.YAcc,
+                ZAcc = m.ZAcc,
+                XGyro = m.XGyro,
+                YGyro = m.YGyro,
+                ZGyro = m.ZGyro,
+                XMag = m.XMag,
+                YMag = m.YMag,
+                ZMag = m.ZMag,
+                TemperatureC = m.TemperatureCdegC is { } t ? t / 100.0 : null
+            }),
+            HighresImu m => Envelope("highresImu", messageId, timeUtc, new HighresImuData
+            {
+                Id = m.Id,
+                XAccMs2 = m.XAccMs2,
+                YAccMs2 = m.YAccMs2,
+                ZAccMs2 = m.ZAccMs2,
+                XGyroRadS = m.XGyroRadS,
+                YGyroRadS = m.YGyroRadS,
+                ZGyroRadS = m.ZGyroRadS,
+                XMagGauss = m.XMagGauss,
+                YMagGauss = m.YMagGauss,
+                ZMagGauss = m.ZMagGauss,
+                AbsPressureHpa = m.AbsPressureHpa,
+                DiffPressureHpa = m.DiffPressureHpa,
+                PressureAlt = m.PressureAlt,
+                TemperatureC = m.TemperatureC
+            }),
+            Vibration m => Envelope("vibration", messageId, timeUtc, new VibrationData
+            {
+                VibrationX = m.VibrationX,
+                VibrationY = m.VibrationY,
+                VibrationZ = m.VibrationZ,
+                Clipping0 = m.Clipping0,
+                Clipping1 = m.Clipping1,
+                Clipping2 = m.Clipping2
+            }),
+            EkfStatusReport m => Envelope("ekfStatusReport", messageId, timeUtc, new EkfStatusReportData
+            {
+                VelocityVariance = m.VelocityVariance,
+                PosHorizVariance = m.PosHorizVariance,
+                PosVertVariance = m.PosVertVariance,
+                CompassVariance = m.CompassVariance,
+                TerrainAltVariance = m.TerrainAltVariance,
+                Flags = m.Flags,
+                AirspeedVariance = m.AirspeedVariance
+            }),
+            CompassmotStatus m => Envelope("compassmotStatus", messageId, timeUtc, new CompassmotStatusData
+            {
+                CurrentA = m.CurrentA,
+                CompensationX = m.CompensationX,
+                CompensationY = m.CompensationY,
+                CompensationZ = m.CompensationZ,
+                ThrottleDpct = m.ThrottleDpct,
+                InterferencePct = m.InterferencePct
+            }),
             _ => Envelope("unknown", messageId, timeUtc, new { })
         };
     }
+
+    private static int ScaledImuIndex(string messageId) => messageId switch
+    {
+        "116" => 2,
+        "129" => 3,
+        _ => 1
+    };
 
     private static MavMessageDto Envelope(string type, string messageId, string timeUtc, object data) =>
         new()

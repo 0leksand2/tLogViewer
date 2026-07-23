@@ -86,12 +86,26 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
                     byMillisecond[ms] = atMs;
                 }
 
+                if (BatteryFieldsEnricher.TryPush(atMs, message, out _))
+                {
+                    messageCount++;
+                    continue;
+                }
+
+                if (SensorFieldsEnricher.TryPush(atMs, message))
+                {
+                    messageCount++;
+                    continue;
+                }
+
                 PushFlattenedValues(atMs, message);
                 messageCount++;
             }
 
             PlaneCoordinateEnricher.Enrich(byMillisecond);
             DerivedFieldsEnricher.ForwardFill(byMillisecond);
+            BatteryFieldsEnricher.EstimateMissingCellsFromSysStatus(byMillisecond);
+            BatteryFieldsEnricher.ForwardFill(byMillisecond);
             RemoveNonFiniteNumbers(byMillisecond);
 
             var homePoints = ExtractHomePoints(byMillisecond);

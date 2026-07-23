@@ -90,14 +90,14 @@ export class SideMenuDataTabComponent {
       return this.formatMinSec(value);
     }
     if (value === null || value === undefined || value === '') {
-      return '0.0';
+      return isBatteryCellKey(key) ? '0.00' : '0.0';
     }
     if (typeof value === 'number') {
       if (!Number.isFinite(value)) {
-        return '0.0';
+        return isBatteryCellKey(key) ? '0.00' : '0.0';
       }
       const display = this.normalizeHeadingDegrees(value, key);
-      return display.toFixed(1);
+      return display.toFixed(isBatteryCellKey(key) ? 2 : 1);
     }
     if (typeof value === 'boolean') {
       return value ? 'true' : 'false';
@@ -107,6 +107,12 @@ export class SideMenuDataTabComponent {
         const parsed = Number(value);
         if (Number.isFinite(parsed)) {
           return this.normalizeHeadingDegrees(parsed, key).toFixed(1);
+        }
+      }
+      if (isBatteryCellKey(key)) {
+        const parsed = Number(value);
+        if (Number.isFinite(parsed)) {
+          return parsed.toFixed(2);
         }
       }
       return value;
@@ -137,4 +143,8 @@ export class SideMenuDataTabComponent {
     const secs = total % 60;
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   }
+}
+
+function isBatteryCellKey(key: string): boolean {
+  return /^battery_cell\d+$/.test(key);
 }

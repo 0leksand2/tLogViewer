@@ -25,6 +25,12 @@ public static class MessageProcessingFactory
                 return new GpsRawInt(packet);
             case MavMessageTypeId.GPS_STATUS:
                 return new GpsStatus(packet);
+            case MavMessageTypeId.SCALED_IMU:
+            case MavMessageTypeId.SCALED_IMU2:
+            case MavMessageTypeId.SCALED_IMU3:
+                return new ScaledImu(packet);
+            case MavMessageTypeId.RAW_IMU:
+                return new RawImu(packet);
             case MavMessageTypeId.ATTITUDE:
                 return new Attitude(packet);
             case MavMessageTypeId.LOCAL_POSITION_NED:
@@ -45,15 +51,25 @@ public static class MessageProcessingFactory
                 return new VfrHud(packet);
             case MavMessageTypeId.POSITION_TARGET_GLOBAL_INT:
                 return new PositionTargetGlobalInt(packet);
+            case MavMessageTypeId.HIGHRES_IMU:
+                return new HighresImu(packet);
             case MavMessageTypeId.RADIO_STATUS:
             case MavMessageTypeId.RADIO:
                 return new Radio(packet);
             case MavMessageTypeId.WIND:
                 return new Wind(packet);
+            case MavMessageTypeId.COMPASSMOT_STATUS:
+                return new CompassmotStatus(packet);
+            case MavMessageTypeId.EKF_STATUS_REPORT:
+                return new EkfStatusReport(packet);
+            case MavMessageTypeId.VIBRATION:
+                return new Vibration(packet);
             case MavMessageTypeId.HOME_POSITION:
                 return new HomePosition(packet);
             case MavMessageTypeId.STATUSTEXT:
                 return new StatusText(packet);
+            case MavMessageTypeId.BATTERY_STATUS:
+                return new BatteryStatus(packet);
             default:
                 return null;
         }
@@ -65,6 +81,10 @@ public static class MessageProcessingFactory
         MavMessageTypeId.SYS_STATUS => 31,
         MavMessageTypeId.GPS_RAW_INT => 52,
         MavMessageTypeId.GPS_STATUS => 101,
+        MavMessageTypeId.SCALED_IMU => 24,
+        MavMessageTypeId.SCALED_IMU2 => 24,
+        MavMessageTypeId.SCALED_IMU3 => 24,
+        MavMessageTypeId.RAW_IMU => 29,
         MavMessageTypeId.ATTITUDE => 28,
         MavMessageTypeId.LOCAL_POSITION_NED => 28,
         MavMessageTypeId.GLOBAL_POSITION_INT => 28,
@@ -75,12 +95,18 @@ public static class MessageProcessingFactory
         MavMessageTypeId.MISSION_ITEM_INT => 38,
         MavMessageTypeId.VFR_HUD => 20,
         MavMessageTypeId.POSITION_TARGET_GLOBAL_INT => 51,
+        MavMessageTypeId.HIGHRES_IMU => 63,
         MavMessageTypeId.RADIO_STATUS => 9,
         MavMessageTypeId.RADIO => 9,
         MavMessageTypeId.WIND => 12,
+        MavMessageTypeId.COMPASSMOT_STATUS => 20,
+        MavMessageTypeId.EKF_STATUS_REPORT => 26,
+        MavMessageTypeId.VIBRATION => 32,
         MavMessageTypeId.HOME_POSITION => 60,
         // Classic 51; MAVLink2 may include id + chunk_seq (54).
         MavMessageTypeId.STATUSTEXT => 54,
+        // Base 36; extensions through fault_bitmask ≈ 54.
+        MavMessageTypeId.BATTERY_STATUS => 54,
         _ => int.MaxValue
     };
 }
