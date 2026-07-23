@@ -1,0 +1,63 @@
+<div class="heading-compass" role="img" [attr.aria-label]="ariaLabel()">
+  <div class="heading-compass__dial">
+    <svg class="heading-compass__svg" viewBox="0 0 200 200" aria-hidden="true">
+      <circle class="heading-compass__face" cx="100" cy="100" r="88" />
+
+      <g [attr.transform]="compassTransform()">
+        @for (deg of minorTicks; track deg) {
+          <line
+            class="heading-compass__tick heading-compass__tick--minor"
+            x1="100"
+            y1="18"
+            x2="100"
+            y2="26"
+            [attr.transform]="'rotate(' + deg + ' 100 100)'"
+          />
+        }
+        @for (deg of majorTicks; track deg) {
+          <g [attr.transform]="'rotate(' + deg + ' 100 100)'">
+            <line
+              class="heading-compass__tick heading-compass__tick--major"
+              [class.heading-compass__tick--cardinal]="isCardinal(deg)"
+              x1="100"
+              y1="16"
+              x2="100"
+              y2="30"
+            />
+            <text
+              class="heading-compass__label"
+              [class.heading-compass__label--cardinal]="isCardinal(deg)"
+              x="100"
+              y="46"
+              text-anchor="middle"
+              dominant-baseline="middle"
+              [attr.transform]="'rotate(' + -deg + ' 100 46)'"
+            >
+              {{ tickLabel(deg) }}
+            </text>
+          </g>
+        }
+      </g>
+
+      <!-- Fixed lubber line at north / top -->
+      <polygon class="heading-compass__lubber" points="100,10 94,22 106,22" />
+
+      <circle class="heading-compass__bezel" cx="100" cy="100" r="88" />
+      <circle class="heading-compass__bezel-outer" cx="100" cy="100" r="94" />
+    </svg>
+
+    <img
+      class="heading-compass__aircraft"
+      src="assets/icons/drone.png"
+      alt=""
+      draggable="false"
+    />
+  </div>
+
+  <div class="heading-compass__readouts">
+    <span class="heading-compass__readout">
+      <span class="heading-compass__readout-label">Yaw</span>
+      <span class="heading-compass__readout-value">{{ yawLabel() }}</span>
+    </span>
+  </div>
+</div>

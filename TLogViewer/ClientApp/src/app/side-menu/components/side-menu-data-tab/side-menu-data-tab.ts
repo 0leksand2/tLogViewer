@@ -2,6 +2,8 @@ import { Component, computed, inject, input, output } from '@angular/core';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MissionPlannerProperty } from '../../../mission-planner-properties/models/mission-planner-properties.const';
 import { CurrentValue } from '../../../core/services/current.value';
+import { VfrHudComponent } from '../vfr-hud/vfr-hud';
+import { HeadingCompassComponent } from '../heading-compass/heading-compass';
 
 export interface TelemetryTile {
   key: string;
@@ -13,7 +15,7 @@ export interface TelemetryTile {
 @Component({
   selector: 'app-side-menu-data-tab',
   standalone: true,
-  imports: [DragDropModule],
+  imports: [DragDropModule, VfrHudComponent, HeadingCompassComponent],
   templateUrl: './side-menu-data-tab.html',
   styleUrl: './side-menu-data-tab.scss',
 })

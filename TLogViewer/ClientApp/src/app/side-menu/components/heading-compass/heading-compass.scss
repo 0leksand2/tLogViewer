@@ -1,0 +1,120 @@
+:host {
+  display: block;
+  flex-shrink: 0;
+}
+
+.heading-compass {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.25rem 0.15rem;
+}
+
+.heading-compass__dial {
+  position: relative;
+  width: min(100%, 11.5rem);
+  aspect-ratio: 1;
+}
+
+.heading-compass__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.heading-compass__face {
+  fill: #eef1f5;
+}
+
+.heading-compass__tick {
+  stroke: #5c6570;
+  stroke-linecap: round;
+}
+
+.heading-compass__tick--minor {
+  stroke-width: 1.2;
+}
+
+.heading-compass__tick--major {
+  stroke-width: 2;
+  stroke: #1a1d24;
+}
+
+.heading-compass__tick--cardinal {
+  stroke-width: 2.4;
+}
+
+.heading-compass__label {
+  fill: #5c6570;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.heading-compass__label--cardinal {
+  fill: #1a1d24;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.heading-compass__lubber {
+  fill: #b42318;
+  stroke: #912018;
+  stroke-width: 0.6;
+}
+
+.heading-compass__bezel {
+  fill: none;
+  stroke: #1a1d24;
+  stroke-width: 2.5;
+}
+
+.heading-compass__bezel-outer {
+  fill: none;
+  stroke: #c5cad3;
+  stroke-width: 5;
+}
+
+.heading-compass__aircraft {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38%;
+  height: auto;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 35%));
+}
+
+.heading-compass__readouts {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.heading-compass__readout {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.heading-compass__readout-label {
+  color: #5c6570;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.625rem;
+}
+
+.heading-compass__readout-value {
+  color: #1a1d24;
+  font-family: Consolas, 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 0.8125rem;
+}

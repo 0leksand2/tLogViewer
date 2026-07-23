@@ -34,6 +34,9 @@ export const FlightFieldIds = {
   AliasWpDistM: '997_010',
   AliasWindDir: '997_011',
   AliasWindSpeed: '997_012',
+  AttitudePitchDeg: '30_001',
+  AttitudeRollDeg: '30_003',
+  AttitudeYawDeg: '30_006',
 } as const;
 
 /** Old flattened key → new numeric key (for migration / catalog rewrite). */

@@ -1,0 +1,50 @@
+<div class="vfr-hud" role="img" [attr.aria-label]="ariaLabel()">
+  <div class="vfr-hud__dial">
+    <svg class="vfr-hud__svg" viewBox="0 0 200 200" aria-hidden="true">
+      <defs>
+        <clipPath id="vfr-hud-clip">
+          <circle cx="100" cy="100" r="88" />
+        </clipPath>
+      </defs>
+
+      <g [attr.clip-path]="'url(#vfr-hud-clip)'">
+        <g [attr.transform]="horizonTransform()">
+          <!-- Oversized sky / ground so pitch+roll never expose empty space -->
+          <rect class="vfr-hud__sky" x="-120" y="-220" width="440" height="320" />
+          <rect class="vfr-hud__ground" x="-120" y="100" width="440" height="320" />
+          <line class="vfr-hud__horizon" x1="-120" y1="100" x2="320" y2="100" />
+
+          <!-- Pitch ladder ticks -->
+          @for (tick of pitchTicks; track tick) {
+            <line
+              class="vfr-hud__pitch-tick"
+              [attr.x1]="100 - (tick % 20 === 0 ? 28 : 16)"
+              [attr.x2]="100 + (tick % 20 === 0 ? 28 : 16)"
+              [attr.y1]="100 - tick * pitchPxPerDeg"
+              [attr.y2]="100 - tick * pitchPxPerDeg"
+            />
+          }
+        </g>
+      </g>
+
+      <!-- Fixed aircraft reference -->
+      <line class="vfr-hud__wing vfr-hud__wing--left" x1="28" y1="100" x2="78" y2="100" />
+      <line class="vfr-hud__wing vfr-hud__wing--right" x1="122" y1="100" x2="172" y2="100" />
+      <circle class="vfr-hud__nose" cx="100" cy="100" r="3.5" />
+
+      <circle class="vfr-hud__bezel" cx="100" cy="100" r="88" />
+      <circle class="vfr-hud__bezel-outer" cx="100" cy="100" r="94" />
+    </svg>
+  </div>
+
+  <div class="vfr-hud__readouts">
+    <span class="vfr-hud__readout">
+      <span class="vfr-hud__readout-label">Roll</span>
+      <span class="vfr-hud__readout-value">{{ rollLabel() }}</span>
+    </span>
+    <span class="vfr-hud__readout">
+      <span class="vfr-hud__readout-label">Pitch</span>
+      <span class="vfr-hud__readout-value">{{ pitchLabel() }}</span>
+    </span>
+  </div>
+</div>

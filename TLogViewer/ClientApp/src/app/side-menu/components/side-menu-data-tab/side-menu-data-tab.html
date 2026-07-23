@@ -1,8 +1,12 @@
 <div class="data-tab">
+  <div class="data-tab__gauges">
+    <app-vfr-hud />
+    <app-heading-compass />
+  </div>
+
   <button type="button" class="data-tab__action" (click)="requestProperties()">
     Telemetry properties
   </button>
-
   @if (tiles().length === 0) {
     <p class="data-tab__empty">No telemetry properties selected.</p>
   } @else {

@@ -32,6 +32,21 @@
   }
 }
 
+.data-tab__gauges {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.data-tab__gauges > * {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 12rem;
+}
+
 .data-tab__empty {
   margin: 0;
   font-size: 0.875rem;
