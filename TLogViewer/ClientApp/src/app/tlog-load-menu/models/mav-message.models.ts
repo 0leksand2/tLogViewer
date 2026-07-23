@@ -37,6 +37,11 @@ export interface FlightArmChangePoint {
   armed: boolean;
 }
 
+export interface FlightStatusText {
+  severity: number;
+  text: string;
+}
+
 export interface Flight extends FlightSummary {
   /** Unix ms → ({messageId}_{valueName} → field value). */
   messages: Record<string, Record<string, unknown>>;
@@ -45,6 +50,8 @@ export interface Flight extends FlightSummary {
   modeChangePoints?: FlightModeChangePoint[];
   /** Unix ms when HEARTBEAT armed state changed (arm / disarm). */
   armChangePoints?: FlightArmChangePoint[];
+  /** STATUSTEXT lines keyed by Unix ms (separate from telemetry messages). */
+  statusTexts?: Record<string, FlightStatusText[]>;
 }
 
 export interface TlogFlightResult {

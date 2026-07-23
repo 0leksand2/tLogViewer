@@ -25,4 +25,9 @@ public sealed class FlightDto
 
     /// <summary>Unix milliseconds when HEARTBEAT armed state changed (arm / disarm).</summary>
     public required IReadOnlyList<FlightArmChangePoint> ArmChangePoints { get; init; }
+
+    /// <summary>
+    /// STATUSTEXT lines keyed by Unix millisecond (separate from flattened telemetry <see cref="Messages"/>).
+    /// </summary>
+    public required IReadOnlyDictionary<long, IReadOnlyList<FlightStatusText>> StatusTexts { get; init; }
 }

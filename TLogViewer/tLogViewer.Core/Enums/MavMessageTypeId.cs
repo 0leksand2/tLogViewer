@@ -21,6 +21,7 @@
         RADIO = 166,
         WIND = 168,
         HOME_POSITION = 242,
+        STATUSTEXT = 253,
         /// <summary>Synthetic derived telemetry (not a wire MAVLink id).</summary>
         DERIVED = 998
     }

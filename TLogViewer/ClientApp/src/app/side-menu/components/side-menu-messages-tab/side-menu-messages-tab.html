@@ -1,3 +1,42 @@
 <div class="messages-tab">
-  <p class="messages-tab__empty">No messages yet.</p>
+  @if (rows().length === 0) {
+    <p class="messages-tab__empty">No status messages in this flight.</p>
+  } @else if (visibleRows().length === 0) {
+    <p class="messages-tab__empty">No status messages yet at this time.</p>
+  } @else {
+    <div class="messages-tab__viewport">
+      <div
+        #messageList
+        class="messages-tab__list"
+        (scroll)="onListScroll()"
+        role="log"
+        aria-live="polite"
+        aria-label="Flight status messages"
+      >
+        @for (row of visibleRows(); track row.id) {
+          <p
+            class="messages-tab__row"
+            [ngClass]="'messages-tab__row--' + severityModifier(row.severity)"
+            [class.messages-tab__row--active]="row.id === activeRowId()"
+            [attr.data-message-id]="row.id"
+            [attr.title]="row.line"
+          >
+            {{ row.line }}
+          </p>
+        }
+      </div>
+
+      @if (showScrollToBottom()) {
+        <button
+          type="button"
+          class="messages-tab__to-bottom"
+          (click)="scrollToBottomAndFollow()"
+          aria-label="Scroll to bottom and follow playback"
+          title="Scroll to bottom"
+        >
+          <span class="messages-tab__to-bottom-arrow" aria-hidden="true"></span>
+        </button>
+      }
+    </div>
+  }
 </div>

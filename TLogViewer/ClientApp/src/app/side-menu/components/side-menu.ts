@@ -2,6 +2,7 @@ import { Component, input, model, output, signal } from '@angular/core';
 import { TabsModule } from '../../shared/tabs/tabs.module';
 import { TabItem } from '../../shared/tabs/models/tab-item.model';
 import { MissionPlannerProperty } from '../../mission-planner-properties/models/mission-planner-properties.const';
+import { FlightStatusText } from '../../tlog-load-menu/models/mav-message.models';
 import { SideMenuDataTabComponent } from './side-menu-data-tab/side-menu-data-tab';
 import { SideMenuMessagesTabComponent } from './side-menu-messages-tab/side-menu-messages-tab';
 
@@ -15,6 +16,8 @@ import { SideMenuMessagesTabComponent } from './side-menu-messages-tab/side-menu
 export class SideMenuComponent {
   readonly open = model(true);
   readonly selectedProperties = input<readonly MissionPlannerProperty[]>([]);
+  readonly statusTexts = input<Record<string, FlightStatusText[]> | null>(null);
+  readonly playing = input(false);
   readonly openProperties = output<void>();
   readonly propertiesReordered = output<MissionPlannerProperty[]>();
 

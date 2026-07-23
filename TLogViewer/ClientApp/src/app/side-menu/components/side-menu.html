@@ -40,7 +40,10 @@
           (propertiesReordered)="onPropertiesReordered($event)"
         />
       } @else if (activeTabId() === 'messages') {
-        <app-side-menu-messages-tab />
+        <app-side-menu-messages-tab
+          [statusTexts]="statusTexts()"
+          [playing]="playing()"
+        />
       }
     </app-tabs>
     <ng-content />

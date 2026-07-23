@@ -189,6 +189,11 @@ public static class MavMessageMapper
                 RxErrors = m.RxErrors,
                 Fixed = m.Fixed
             }),
+            StatusText m => Envelope("statusText", messageId, timeUtc, new StatusTextData
+            {
+                Severity = (byte)m.Severity,
+                Text = m.Text
+            }),
             _ => Envelope("unknown", messageId, timeUtc, new { })
         };
     }

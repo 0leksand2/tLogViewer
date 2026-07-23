@@ -1,16 +1,112 @@
 :host {
   display: block;
+  height: 100%;
+  min-height: 0;
 }
 
 .messages-tab {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  height: 100%;
+  min-height: 0;
 }
 
 .messages-tab__empty {
   margin: 0;
-  font-size: 0.875rem;
-  line-height: 1.45;
+  font-size: 0.75rem;
+  line-height: 1.4;
   color: #5c6570;
+}
+
+.messages-tab__viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages-tab__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.1rem 0 0.35rem;
+}
+
+.messages-tab__row {
+  margin: 0;
+  padding: 0.12rem 0.2rem 0.12rem 0.35rem;
+  border-left: 2px solid #8b93a0;
+  border-radius: 0;
+  background: transparent;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  color: #1a1d24;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.messages-tab__row--active {
+  background: rgb(93 5 245 / 8%);
+}
+
+.messages-tab__row--critical {
+  border-left-color: #912018;
+}
+
+.messages-tab__row--error {
+  border-left-color: #b42318;
+}
+
+.messages-tab__row--warning {
+  border-left-color: #b54708;
+}
+
+.messages-tab__row--info {
+  border-left-color: #175cd3;
+}
+
+.messages-tab__row--debug {
+  border-left-color: #667085;
+}
+
+.messages-tab__to-bottom {
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.55rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e2e5eb;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 16%);
+  cursor: pointer;
+
+  &:hover {
+    background: #f0f2f5;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary, #5d05f5);
+    outline-offset: 2px;
+  }
+}
+
+.messages-tab__to-bottom-arrow {
+  display: block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid #1a1d24;
+  border-bottom: 2px solid #1a1d24;
+  transform: translateY(-15%) rotate(45deg);
 }

@@ -3,6 +3,8 @@
   <app-side-menu
     [(open)]="menuOpen"
     [selectedProperties]="orderedSelectedProperties()"
+    [statusTexts]="loadedFlight()?.statusTexts ?? null"
+    [playing]="flightPlaying()"
     (openProperties)="openPropertiesModal()"
     (propertiesReordered)="onPropertiesReordered($event)"
   />

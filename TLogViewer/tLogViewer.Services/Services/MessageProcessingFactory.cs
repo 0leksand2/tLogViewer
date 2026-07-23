@@ -52,6 +52,8 @@ public static class MessageProcessingFactory
                 return new Wind(packet);
             case MavMessageTypeId.HOME_POSITION:
                 return new HomePosition(packet);
+            case MavMessageTypeId.STATUSTEXT:
+                return new StatusText(packet);
             default:
                 return null;
         }
@@ -77,6 +79,8 @@ public static class MessageProcessingFactory
         MavMessageTypeId.RADIO => 9,
         MavMessageTypeId.WIND => 12,
         MavMessageTypeId.HOME_POSITION => 60,
+        // Classic 51; MAVLink2 may include id + chunk_seq (54).
+        MavMessageTypeId.STATUSTEXT => 54,
         _ => int.MaxValue
     };
 }

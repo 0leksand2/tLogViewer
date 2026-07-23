@@ -61,6 +61,7 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
             var armedWindow = FindArmedWindow(heartbeats, start, end);
 
             var byMillisecond = new Dictionary<long, Dictionary<string, object>>();
+            var statusTextsByMs = new Dictionary<long, List<FlightStatusText>>();
             var messageCount = 0;
 
             foreach (var message in messages)
@@ -72,6 +73,13 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
                 }
 
                 var ms = time.ToUnixTimeMilliseconds();
+
+                if (TryPushStatusText(statusTextsByMs, ms, message))
+                {
+                    messageCount++;
+                    continue;
+                }
+
                 if (!byMillisecond.TryGetValue(ms, out var atMs))
                 {
                     atMs = new Dictionary<string, object>(StringComparer.Ordinal);
@@ -109,11 +117,53 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
                     static pair => (IReadOnlyDictionary<string, object>)pair.Value),
                 HomePoints = homePoints,
                 ModeChangePoints = modeChangePoints,
-                ArmChangePoints = armChangePoints
+                ArmChangePoints = armChangePoints,
+                StatusTexts = statusTextsByMs.ToDictionary(
+                    static pair => pair.Key,
+                    static pair => (IReadOnlyList<FlightStatusText>)pair.Value)
             });
         }
 
         return flights;
+    }
+
+    /// <summary>
+    /// Stores STATUSTEXT on the parallel per-ms map (not in flattened telemetry).
+    /// </summary>
+    private static bool TryPushStatusText(
+        Dictionary<long, List<FlightStatusText>> statusTextsByMs,
+        long ms,
+        MavMessageDto message)
+    {
+        if (!string.Equals(message.Type, "statusText", StringComparison.Ordinal)
+            && !string.Equals(message.MessageId, "253", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (message.Data is not StatusTextData data)
+        {
+            return false;
+        }
+
+        var text = data.Text?.Trim() ?? string.Empty;
+        if (text.Length == 0)
+        {
+            return true;
+        }
+
+        if (!statusTextsByMs.TryGetValue(ms, out var list))
+        {
+            list = [];
+            statusTextsByMs[ms] = list;
+        }
+
+        list.Add(new FlightStatusText
+        {
+            Severity = data.Severity,
+            Text = text
+        });
+        return true;
     }
 
     /// <summary>
