@@ -80,6 +80,58 @@ public static class BatteryFieldsEnricher
         FlightFieldIds.BatteryRemaining9,
     ];
 
+    private static readonly string[] CurrentKeys =
+    [
+        "1_001",
+        FlightFieldIds.Current2,
+        FlightFieldIds.Current3,
+        FlightFieldIds.Current4,
+        FlightFieldIds.Current5,
+        FlightFieldIds.Current6,
+        FlightFieldIds.Current7,
+        FlightFieldIds.Current8,
+        FlightFieldIds.Current9,
+    ];
+
+    private static readonly string[] TempKeys =
+    [
+        FlightFieldIds.BatteryTemp,
+        FlightFieldIds.BatteryTemp2,
+        FlightFieldIds.BatteryTemp3,
+        FlightFieldIds.BatteryTemp4,
+        FlightFieldIds.BatteryTemp5,
+        FlightFieldIds.BatteryTemp6,
+        FlightFieldIds.BatteryTemp7,
+        FlightFieldIds.BatteryTemp8,
+        FlightFieldIds.BatteryTemp9,
+    ];
+
+    private static readonly string[] UsedMahKeys =
+    [
+        FlightFieldIds.BatteryUsedMah,
+        FlightFieldIds.BatteryUsedMah2,
+        FlightFieldIds.BatteryUsedMah3,
+        FlightFieldIds.BatteryUsedMah4,
+        FlightFieldIds.BatteryUsedMah5,
+        FlightFieldIds.BatteryUsedMah6,
+        FlightFieldIds.BatteryUsedMah7,
+        FlightFieldIds.BatteryUsedMah8,
+        FlightFieldIds.BatteryUsedMah9,
+    ];
+
+    private static readonly string[] RemainMinKeys =
+    [
+        FlightFieldIds.BatteryRemainMin,
+        FlightFieldIds.BatteryRemainMin2,
+        FlightFieldIds.BatteryRemainMin3,
+        FlightFieldIds.BatteryRemainMin4,
+        FlightFieldIds.BatteryRemainMin5,
+        FlightFieldIds.BatteryRemainMin6,
+        FlightFieldIds.BatteryRemainMin7,
+        FlightFieldIds.BatteryRemainMin8,
+        FlightFieldIds.BatteryRemainMin9,
+    ];
+
     /// <summary>
     /// Writes BATTERY_STATUS fields into the millisecond bucket (Mission Planner 999_* keys).
     /// Returns true when the message was a BATTERY_STATUS (even if no cells were written).
@@ -162,6 +214,26 @@ public static class BatteryFieldsEnricher
             {
                 ForwardFillKey(atMs, lastValues, key);
             }
+
+            foreach (var key in CurrentKeys)
+            {
+                ForwardFillKey(atMs, lastValues, key);
+            }
+
+            foreach (var key in TempKeys)
+            {
+                ForwardFillKey(atMs, lastValues, key);
+            }
+
+            foreach (var key in UsedMahKeys)
+            {
+                ForwardFillKey(atMs, lastValues, key);
+            }
+
+            foreach (var key in RemainMinKeys)
+            {
+                ForwardFillKey(atMs, lastValues, key);
+            }
         }
     }
 
@@ -170,6 +242,9 @@ public static class BatteryFieldsEnricher
     {
         var cellVoltages = ResolveIndividualCellVoltagesV(data.VoltagesMv, data.VoltagesExtMv);
         var packVoltageV = ResolvePackVoltageV(data.VoltagesMv, data.VoltagesExtMv);
+        var wroteCells = false;
+
+        WriteBatteryExtras(atMs, data);
 
         if (data.Id == 0)
         {
@@ -180,12 +255,10 @@ public static class BatteryFieldsEnricher
                     atMs[CellKeys[i]] = cellVoltages[i];
                 }
 
-                return true;
+                wroteCells = true;
             }
 
-            // Pack-only BATTERY_STATUS: do not invent cells here — SYS_STATUS pack voltage
-            // is preferred in EstimateMissingCellsFromSysStatus (avoids bad single-entry mV).
-            return false;
+            return wroteCells;
         }
 
         if (data.Id >= 1 && data.Id <= 8 && packVoltageV is > 0)
@@ -198,6 +271,34 @@ public static class BatteryFieldsEnricher
         }
 
         return false;
+    }
+
+    private static void WriteBatteryExtras(Dictionary<string, object> atMs, BatteryStatusData data)
+    {
+        if (data.Id > 8)
+        {
+            return;
+        }
+
+        if (data.CurrentBatteryA is { } current)
+        {
+            atMs[CurrentKeys[data.Id]] = current;
+        }
+
+        if (data.TemperatureC is { } temp)
+        {
+            atMs[TempKeys[data.Id]] = temp;
+        }
+
+        if (data.CurrentConsumedMah is { } used)
+        {
+            atMs[UsedMahKeys[data.Id]] = used;
+        }
+
+        if (data.TimeRemainingSec is { } remainSec and > 0)
+        {
+            atMs[RemainMinKeys[data.Id]] = remainSec / 60.0;
+        }
     }
 
     private static void WriteEqualCellVoltages(Dictionary<string, object> atMs, double packVoltageV)

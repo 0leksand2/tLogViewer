@@ -14,9 +14,12 @@ public sealed class BatteryStatus : MavLinkMessage
     public byte BatteryFunction;
     public byte Type;
     public sbyte BatteryRemainingPct;
+    public byte ChargeState;
+    /// <summary>Seconds remaining; null when extension absent.</summary>
+    public int? TimeRemainingSec;
     public ushort[] VoltagesExtMv = new ushort[4];
 
-    /// <summary>Base 36 bytes; MAVLink2 extensions through voltages_ext (49+) zero-padded.</summary>
+    /// <summary>Base 36; extensions through voltages_ext (49+) zero-padded.</summary>
     public override int ExpectedLength => 49;
 
     public BatteryStatus(MavPacket packet) : base(packet)
@@ -36,7 +39,12 @@ public sealed class BatteryStatus : MavLinkMessage
         Type = FullPacket[34];
         BatteryRemainingPct = unchecked((sbyte)FullPacket[35]);
 
-        // voltages_ext starts at offset 41 when charge_state (1 byte) + time_remaining (4) present.
+        if (packet.Payload.Length >= 41)
+        {
+            ChargeState = FullPacket[36];
+            TimeRemainingSec = BitConverter.ToInt32(FullPacket, 37);
+        }
+
         if (packet.Payload.Length >= 49)
         {
             for (var i = 0; i < 4; i++)

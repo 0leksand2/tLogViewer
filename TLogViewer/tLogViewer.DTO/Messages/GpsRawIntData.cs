@@ -11,4 +11,9 @@ public sealed class GpsRawIntData
     public byte SatellitesVisible { get; init; }
     public ushort Eph { get; init; }
     public ushort Epv { get; init; }
+    public uint? HAcc { get; init; }
+    public uint? VAcc { get; init; }
+    public uint? VelAcc { get; init; }
+    public uint? HdgAcc { get; init; }
+    public ushort? YawCdeg { get; init; }
 }

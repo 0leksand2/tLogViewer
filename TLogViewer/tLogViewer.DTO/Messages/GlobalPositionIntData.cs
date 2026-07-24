@@ -10,4 +10,7 @@ public sealed class GlobalPositionIntData
     public double HorizontalVelocityMS { get; init; }
     public double VerticalVelocityMS { get; init; }
     public double HeadingDeg { get; init; }
+    public double VelocityXMs { get; init; }
+    public double VelocityYMs { get; init; }
+    public double VelocityZMs { get; init; }
 }

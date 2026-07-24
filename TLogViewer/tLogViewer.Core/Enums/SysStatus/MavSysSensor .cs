@@ -14,7 +14,9 @@
         LaserPosition = 1 << 8,
         RCReceiver = 1 << 10,
         AHRS = 1 << 11,
+        MotorOutputs = 1 << 15,
+        Geofence = 1 << 20,
         Terrain = 1 << 22,
-        Geofence = 1 << 20
+        PrearmCheck = 1u << 28
     }
 }

@@ -12,4 +12,6 @@ public sealed class BatteryStatusData
     public double? CurrentBatteryA { get; init; }
     public double? TemperatureC { get; init; }
     public int? CurrentConsumedMah { get; init; }
+    /// <summary>Estimated seconds remaining; null when unknown.</summary>
+    public int? TimeRemainingSec { get; init; }
 }

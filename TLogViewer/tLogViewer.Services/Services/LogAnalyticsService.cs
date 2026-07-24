@@ -98,7 +98,14 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
                     continue;
                 }
 
+                if (HudWireEnricher.TryPush(atMs, message))
+                {
+                    messageCount++;
+                    continue;
+                }
+
                 PushFlattenedValues(atMs, message);
+                HudAliasEnricher.Apply(atMs, message);
                 messageCount++;
             }
 
@@ -199,7 +206,12 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
             }
 
             var valueName = PropertyNaming.ConvertName(property.Name);
-            atMs[FlightFieldIds.Format(message.MessageId, valueName)] = value;
+            if (!FlightFieldIds.TryFormat(message.MessageId, valueName, out var fieldKey))
+            {
+                continue;
+            }
+
+            atMs[fieldKey] = value;
         }
     }
 
