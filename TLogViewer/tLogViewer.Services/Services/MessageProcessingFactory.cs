@@ -108,6 +108,8 @@ public static class MessageProcessingFactory
                 return new ExtendedSysState(packet);
             case MavMessageTypeId.STATUSTEXT:
                 return new StatusText(packet);
+            case MavMessageTypeId.GPS_INPUT:
+                return new GpsInput(packet);
             case MavMessageTypeId.GENERATOR_STATUS:
                 return new GeneratorStatus(packet);
             case MavMessageTypeId.ESC_INFO:
@@ -191,6 +193,7 @@ public static class MessageProcessingFactory
         MavMessageTypeId.HOME_POSITION => 60,
         MavMessageTypeId.EXTENDED_SYS_STATE => 2,
         MavMessageTypeId.STATUSTEXT => 54,
+        MavMessageTypeId.GPS_INPUT => 65,
         MavMessageTypeId.GENERATOR_STATUS => 42,
         MavMessageTypeId.ESC_INFO => 46,
         MavMessageTypeId.ESC_STATUS => 57,

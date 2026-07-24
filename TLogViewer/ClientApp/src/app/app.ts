@@ -80,6 +80,7 @@ export class App {
   protected readonly displayTrail = this.mapDisplaySettings.displayTrail;
   protected readonly displayFullTrail = this.mapDisplaySettings.displayFullTrail;
   protected readonly trailLengthSeconds = this.mapDisplaySettings.trailLengthSeconds;
+  protected readonly gpsSource = this.mapDisplaySettings.gpsSource;
   protected readonly selectedProperties = signal<MissionPlannerProperty[]>(
     this.selectedPropertiesStorage.load(),
   );
@@ -183,7 +184,9 @@ export class App {
       const showTrail = this.mapDisplaySettings.displayTrail();
       const fullTrail = this.mapDisplaySettings.displayFullTrail();
       const trailLengthSeconds = this.mapDisplaySettings.trailLengthSeconds();
-      const plane = resolvePlanePosition(flight?.messages, playbackMs);
+      const gpsSource = this.mapDisplaySettings.gpsSource();
+      const points = this.playbackPoints();
+      const plane = resolvePlanePosition(flight?.messages, playbackMs, gpsSource, points);
       const target = resolvePositionTarget(flight?.messages, playbackMs);
       const homePoints = resolveFlightHomePoints(flight?.homePoints, flight?.messages);
       const home = resolveActiveHomePoint(homePoints, playbackMs);
@@ -217,7 +220,7 @@ export class App {
           0,
         );
         const trailKey = showTrail
-          ? `${flight?.id ?? ''}|${sampleBucket}|${modeEpoch}|${fullTrail ? 'full' : trailLengthSeconds}`
+          ? `${flight?.id ?? ''}|${sampleBucket}|${modeEpoch}|${fullTrail ? 'full' : trailLengthSeconds}|${gpsSource}`
           : 'off';
 
         if (trailKey !== this.lastTrailBuildKey) {
@@ -226,11 +229,12 @@ export class App {
             map.setFlightTrail(
               buildFlightTrail(
                 flight?.messages,
-                this.playbackPoints(),
+                points,
                 playbackMs,
                 modeMarkers,
                 trailLengthSeconds,
                 fullTrail,
+                gpsSource,
               ),
             );
           } else {

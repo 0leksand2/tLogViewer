@@ -1,4 +1,10 @@
 import { Injectable, signal } from '@angular/core';
+import {
+  DEFAULT_GPS_SOURCE,
+  GPS_SOURCE_OPTIONS,
+  type MapGpsSource,
+  isMapGpsSource,
+} from '../models/map-gps-source';
 
 const STORAGE_KEY = 'tlog-viewer.map-display-settings';
 
@@ -15,6 +21,8 @@ export interface MapDisplaySettings {
   displayFullTrail: boolean;
   /** Trail length in seconds of log time (ignored when full trail is on). */
   trailLengthSeconds: number;
+  /** MAVLink message used for aircraft lat/lon on the map. */
+  gpsSource: MapGpsSource;
 }
 
 export const TRAIL_LENGTH_OPTIONS = [
@@ -27,6 +35,8 @@ export const TRAIL_LENGTH_OPTIONS = [
   { seconds: 1200, label: '20min' },
 ] as const;
 
+export { GPS_SOURCE_OPTIONS };
+
 const DEFAULTS: MapDisplaySettings = {
   displayHeading: true,
   displayTargetPath: true,
@@ -34,6 +44,7 @@ const DEFAULTS: MapDisplaySettings = {
   displayTrail: true,
   displayFullTrail: false,
   trailLengthSeconds: 60,
+  gpsSource: DEFAULT_GPS_SOURCE,
 };
 
 function clampTrailLength(value: number): number {
@@ -54,6 +65,10 @@ function snapTrailLength(value: number): number {
   return best;
 }
 
+function normalizeGpsSource(value: unknown): MapGpsSource {
+  return isMapGpsSource(value) ? value : DEFAULT_GPS_SOURCE;
+}
+
 @Injectable({ providedIn: 'root' })
 export class MapDisplaySettingsService {
   readonly displayHeading = signal(DEFAULTS.displayHeading);
@@ -62,6 +77,7 @@ export class MapDisplaySettingsService {
   readonly displayTrail = signal(DEFAULTS.displayTrail);
   readonly displayFullTrail = signal(DEFAULTS.displayFullTrail);
   readonly trailLengthSeconds = signal(DEFAULTS.trailLengthSeconds);
+  readonly gpsSource = signal<MapGpsSource>(DEFAULTS.gpsSource);
 
   constructor() {
     this.restore();
@@ -97,6 +113,11 @@ export class MapDisplaySettingsService {
     this.persist();
   }
 
+  setGpsSource(value: MapGpsSource): void {
+    this.gpsSource.set(normalizeGpsSource(value));
+    this.persist();
+  }
+
   /** Replace all display settings and persist once. */
   applyAll(settings: MapDisplaySettings): void {
     this.displayHeading.set(!!settings.displayHeading);
@@ -105,6 +126,7 @@ export class MapDisplaySettingsService {
     this.displayTrail.set(!!settings.displayTrail);
     this.displayFullTrail.set(!!settings.displayFullTrail);
     this.trailLengthSeconds.set(snapTrailLength(Number(settings.trailLengthSeconds)));
+    this.gpsSource.set(normalizeGpsSource(settings.gpsSource));
     this.persist();
   }
 
@@ -137,6 +159,9 @@ export class MapDisplaySettingsService {
       ) {
         this.trailLengthSeconds.set(snapTrailLength(Number(parsed.trailLengthSeconds)));
       }
+      if (parsed.gpsSource !== undefined) {
+        this.gpsSource.set(normalizeGpsSource(parsed.gpsSource));
+      }
     } catch {
       // keep defaults
     }
@@ -150,6 +175,7 @@ export class MapDisplaySettingsService {
       displayTrail: this.displayTrail(),
       displayFullTrail: this.displayFullTrail(),
       trailLengthSeconds: this.trailLengthSeconds(),
+      gpsSource: this.gpsSource(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }

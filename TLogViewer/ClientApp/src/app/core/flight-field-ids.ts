@@ -39,6 +39,10 @@ export const FlightFieldIds = {
   AttitudePitchDeg: '30_001',
   AttitudeRollDeg: '30_003',
   AttitudeYawDeg: '30_006',
+  GpsInputLat: '232_003',
+  GpsInputLon: '232_004',
+  Ahrs2Lat: '178_002',
+  Ahrs2Lng: '178_003',
 } as const;
 
 /** Old flattened key → new numeric key (for migration / catalog rewrite). */

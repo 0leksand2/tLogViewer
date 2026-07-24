@@ -1,6 +1,21 @@
 <div class="map-settings">
   <p class="map-settings__title">Map display</p>
 
+  <label class="map-settings__option map-settings__option--gps-source">
+    <span class="map-settings__gps-source-label">GPS source</span>
+    <select
+      class="map-settings__select map-settings__select--gps"
+      (change)="onGpsSourceChange($any($event.target).value)"
+      aria-label="GPS source"
+    >
+      @for (option of gpsSourceOptions; track option.value) {
+        <option [value]="option.value" [selected]="draftGpsSource() === option.value">
+          {{ option.label }}
+        </option>
+      }
+    </select>
+  </label>
+
   <label class="map-settings__option">
     <input
       type="checkbox"

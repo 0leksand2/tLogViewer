@@ -88,6 +88,15 @@
   padding-left: 1.5rem;
 }
 
+.map-settings__option--gps-source {
+  cursor: default;
+  margin-bottom: 0.25rem;
+}
+
+.map-settings__gps-source-label {
+  min-width: 5.5rem;
+}
+
 .map-settings__option--nested {
   padding-left: 1.5rem;
 }
@@ -114,6 +123,10 @@
   color: #1a1d24;
   font-size: 0.875rem;
   cursor: pointer;
+
+  &--gps {
+    min-width: 12.5rem;
+  }
 
   &:disabled {
     opacity: 0.55;

@@ -1,4 +1,9 @@
 import { FlightFieldIds } from '../../core/flight-field-ids';
+import {
+  DEFAULT_GPS_SOURCE,
+  gpsSourceLatLonKeys,
+  type MapGpsSource,
+} from '../../map/models/map-gps-source';
 
 /** Sorted Unix-ms keys from a flight messages dictionary. */
 export function sortedPlaybackPoints(
@@ -317,6 +322,8 @@ export function resolveActiveHomePoint(
 export function resolvePlanePosition(
   messages: Record<string, Record<string, unknown>> | null | undefined,
   playbackMs: number | null,
+  gpsSource: MapGpsSource = DEFAULT_GPS_SOURCE,
+  playbackPoints?: readonly number[],
 ): {
   lat: number;
   lon: number;
@@ -334,8 +341,6 @@ export function resolvePlanePosition(
     return null;
   }
 
-  const lat = asFiniteNumber(fields[FlightFieldIds.AliasLat]);
-  const lon = asFiniteNumber(fields[FlightFieldIds.AliasLon]);
   const yaw =
     asFiniteNumber(fields[FlightFieldIds.AliasYaw]) ??
     asFiniteNumber(fields[FlightFieldIds.VfrHeadingDeg]);
@@ -349,24 +354,66 @@ export function resolvePlanePosition(
     asFiniteNumber(fields[FlightFieldIds.AliasWindSpeed]) ??
     asFiniteNumber(fields[FlightFieldIds.WindSpeed]);
 
-  if (lat !== null && lon !== null) {
-    return { lat, lon, yaw, navBearing, windDir, windSpeed };
+  const points = playbackPoints ?? sortedPlaybackPoints(messages);
+  const pos = resolveLatLonFromGpsSource(messages, points, playbackMs, gpsSource);
+  if (!pos) {
+    return null;
   }
 
-  // Fallback for flights processed before lat/lon enrichment.
-  for (const [latKey, lonKey] of [
-    [FlightFieldIds.GlobalPosLat, FlightFieldIds.GlobalPosLon],
-    [FlightFieldIds.GpsRawLat, FlightFieldIds.GpsRawLon],
-    [FlightFieldIds.PositionTargetLat, FlightFieldIds.PositionTargetLon],
-  ] as const) {
-    const fallbackLat = asFiniteNumber(fields[latKey]);
-    const fallbackLon = asFiniteNumber(fields[lonKey]);
-    if (fallbackLat !== null && fallbackLon !== null) {
-      return { lat: fallbackLat, lon: fallbackLon, yaw, navBearing, windDir, windSpeed };
+  return { lat: pos.lat, lon: pos.lon, yaw, navBearing, windDir, windSpeed };
+}
+
+function resolveLatLonFromGpsSource(
+  messages: Record<string, Record<string, unknown>>,
+  points: readonly number[],
+  targetMs: number,
+  gpsSource: MapGpsSource,
+): { lat: number; lon: number } | null {
+  const { lat: latKey, lon: lonKey } = gpsSourceLatLonKeys(gpsSource);
+  const start = findPointIndexAtOrBefore(points, targetMs);
+  if (start < 0) {
+    return null;
+  }
+
+  for (let i = start; i >= 0; i--) {
+    const fields = messages[String(points[i])];
+    if (!fields) {
+      continue;
     }
+
+    const lat = asFiniteNumber(fields[latKey]);
+    const lon = asFiniteNumber(fields[lonKey]);
+    if (lat === null || lon === null) {
+      continue;
+    }
+
+    if (Math.abs(lat) < 1e-9 && Math.abs(lon) < 1e-9) {
+      continue;
+    }
+
+    return { lat, lon };
   }
 
   return null;
+}
+
+function findPointIndexAtOrBefore(points: readonly number[], targetMs: number): number {
+  if (points.length === 0) {
+    return -1;
+  }
+
+  let lo = 0;
+  let hi = points.length - 1;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi + 1) / 2);
+    if (points[mid]! <= targetMs) {
+      lo = mid;
+    } else {
+      hi = mid - 1;
+    }
+  }
+
+  return points[lo]! <= targetMs ? lo : -1;
 }
 
 /** Active navigation/position target at the current playback millisecond. */

@@ -602,6 +602,14 @@ public static class FlightFieldIds
             ["24:hdgAccDeg"] = 13,
             ["24:yawDeg"] = 14,
             ["24:hdop"] = 15,
+            ["232:gpsId"] = 1,
+            ["232:fixType"] = 2,
+            ["232:latitudeDeg"] = 3,
+            ["232:longitudeDeg"] = 4,
+            ["232:altitudeM"] = 5,
+            ["232:satellitesVisible"] = 6,
+            ["232:hdop"] = 7,
+            ["232:vdop"] = 8,
             ["26:xAccG"] = 1,
             ["26:yAccG"] = 2,
             ["26:zAccG"] = 3,
@@ -1132,6 +1140,8 @@ public static class FlightFieldIds
     public const string GpsRawLon = "24_008";
     public const string GlobalPosLat = "33_004";
     public const string GlobalPosLon = "33_005";
+    public const string GpsInputLat = "232_003";
+    public const string GpsInputLon = "232_004";
     public const string AliasLat = "997_001";
     public const string AliasLon = "997_002";
     public const string AliasYaw = "997_003";

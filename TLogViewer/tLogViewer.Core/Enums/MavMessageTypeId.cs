@@ -50,6 +50,7 @@
         HOME_POSITION = 242,
         EXTENDED_SYS_STATE = 245,
         STATUSTEXT = 253,
+        GPS_INPUT = 232,
         GENERATOR_STATUS = 373,
         ESC_INFO = 290,
         ESC_STATUS = 291,

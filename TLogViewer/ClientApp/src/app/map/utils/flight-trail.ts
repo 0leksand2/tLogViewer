@@ -1,5 +1,10 @@
 import { flightModeColor } from '../../core/flight-mode';
 import { FlightFieldIds } from '../../core/flight-field-ids';
+import {
+  DEFAULT_GPS_SOURCE,
+  gpsSourceLatLonKeys,
+  type MapGpsSource,
+} from '../models/map-gps-source';
 
 /** Sample trail vertices every 100 ms of log time. */
 export const TRAIL_SAMPLE_MS = 100;
@@ -51,33 +56,30 @@ function findPointIndexAtOrBefore(points: readonly number[], targetMs: number): 
   return points[lo]! <= targetMs ? lo : -1;
 }
 
-function readLatLon(fields: Record<string, unknown>): { lat: number; lon: number } | null {
-  const lat = asFiniteNumber(fields[FlightFieldIds.AliasLat]);
-  const lon = asFiniteNumber(fields[FlightFieldIds.AliasLon]);
-  if (lat !== null && lon !== null) {
-    return { lat, lon };
+function readLatLonFromSource(
+  fields: Record<string, unknown>,
+  gpsSource: MapGpsSource,
+): { lat: number; lon: number } | null {
+  const { lat: latKey, lon: lonKey } = gpsSourceLatLonKeys(gpsSource);
+  const lat = asFiniteNumber(fields[latKey]);
+  const lon = asFiniteNumber(fields[lonKey]);
+  if (lat === null || lon === null) {
+    return null;
   }
 
-  for (const [latKey, lonKey] of [
-    [FlightFieldIds.GlobalPosLat, FlightFieldIds.GlobalPosLon],
-    [FlightFieldIds.GpsRawLat, FlightFieldIds.GpsRawLon],
-    [FlightFieldIds.PositionTargetLat, FlightFieldIds.PositionTargetLon],
-  ] as const) {
-    const fallbackLat = asFiniteNumber(fields[latKey]);
-    const fallbackLon = asFiniteNumber(fields[lonKey]);
-    if (fallbackLat !== null && fallbackLon !== null) {
-      return { lat: fallbackLat, lon: fallbackLon };
-    }
+  if (Math.abs(lat) < 1e-9 && Math.abs(lon) < 1e-9) {
+    return null;
   }
 
-  return null;
+  return { lat, lon };
 }
 
-/** Latest plane lat/lon at or before `targetMs`. */
+/** Latest plane lat/lon at or before `targetMs` for the selected GPS source. */
 export function resolvePlaneLatLonAtOrBefore(
   messages: Record<string, Record<string, unknown>>,
   points: readonly number[],
   targetMs: number,
+  gpsSource: MapGpsSource = DEFAULT_GPS_SOURCE,
 ): { lat: number; lon: number } | null {
   const start = findPointIndexAtOrBefore(points, targetMs);
   if (start < 0) {
@@ -89,7 +91,7 @@ export function resolvePlaneLatLonAtOrBefore(
     if (!fields) {
       continue;
     }
-    const pos = readLatLon(fields);
+    const pos = readLatLonFromSource(fields, gpsSource);
     if (pos) {
       return pos;
     }
@@ -135,6 +137,7 @@ export function buildFlightTrail(
   modeChangePoints: readonly ModeChangeLike[],
   trailLengthSeconds: number,
   fullTrail = false,
+  gpsSource: MapGpsSource = DEFAULT_GPS_SOURCE,
 ): FlightTrailVertex[] {
   if (!messages || playbackMs === null || playbackPoints.length === 0) {
     return [];
@@ -167,7 +170,7 @@ export function buildFlightTrail(
   let lastLng: number | null = null;
 
   for (const t of sortedTimes) {
-    const pos = resolvePlaneLatLonAtOrBefore(messages, playbackPoints, t);
+    const pos = resolvePlaneLatLonAtOrBefore(messages, playbackPoints, t, gpsSource);
     if (!pos) {
       continue;
     }

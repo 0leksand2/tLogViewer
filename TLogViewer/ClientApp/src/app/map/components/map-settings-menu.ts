@@ -1,7 +1,9 @@
 import { Component, effect, input, signal } from '@angular/core';
 import { ModalContentHostDirective } from '../../shared/modal/directives/modal-content-host.directive';
 import { ModalContentBase } from '../../shared/modal/models/modal-content.model';
+import { DEFAULT_GPS_SOURCE, type MapGpsSource } from '../models/map-gps-source';
 import {
+  GPS_SOURCE_OPTIONS,
   MapDisplaySettings,
   TRAIL_LENGTH_OPTIONS,
 } from '../services/map-display-settings.service';
@@ -21,8 +23,10 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
   readonly displayTrail = input(true);
   readonly displayFullTrail = input(false);
   readonly trailLengthSeconds = input(60);
+  readonly gpsSource = input<MapGpsSource>(DEFAULT_GPS_SOURCE);
 
   protected readonly trailLengthOptions = TRAIL_LENGTH_OPTIONS;
+  protected readonly gpsSourceOptions = GPS_SOURCE_OPTIONS;
 
   protected readonly draftHeading = signal(true);
   protected readonly draftTargetPath = signal(true);
@@ -30,6 +34,7 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
   protected readonly draftTrail = signal(true);
   protected readonly draftFullTrail = signal(false);
   protected readonly draftTrailLengthSeconds = signal(60);
+  protected readonly draftGpsSource = signal<MapGpsSource>(DEFAULT_GPS_SOURCE);
 
   constructor() {
     super();
@@ -40,6 +45,7 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
       this.draftTrail.set(this.displayTrail());
       this.draftFullTrail.set(this.displayFullTrail());
       this.draftTrailLengthSeconds.set(this.trailLengthSeconds());
+      this.draftGpsSource.set(this.gpsSource());
     });
   }
 
@@ -51,6 +57,7 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
       displayTrail: this.draftTrail(),
       displayFullTrail: this.draftFullTrail(),
       trailLengthSeconds: Number(this.draftTrailLengthSeconds()),
+      gpsSource: this.draftGpsSource(),
     };
   }
 
@@ -80,5 +87,12 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
       return;
     }
     this.draftTrailLengthSeconds.set(parsed);
+  }
+
+  protected onGpsSourceChange(value: string): void {
+    const match = GPS_SOURCE_OPTIONS.find((option) => option.value === value);
+    if (match) {
+      this.draftGpsSource.set(match.value);
+    }
   }
 }

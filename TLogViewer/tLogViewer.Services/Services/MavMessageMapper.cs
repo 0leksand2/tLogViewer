@@ -65,6 +65,17 @@ public static class MavMessageMapper
                 HdgAcc = m.HdgAcc,
                 YawCdeg = m.Yaw
             }),
+            GpsInput m => Envelope("gpsInput", messageId, timeUtc, new GpsInputData
+            {
+                GpsId = m.GpsId,
+                FixType = m.FixType,
+                LatitudeDeg = m.LatitudeDeg,
+                LongitudeDeg = m.LongitudeDeg,
+                AltitudeM = m.AltM,
+                SatellitesVisible = m.SatellitesVisible,
+                Hdop = m.Hdop,
+                Vdop = m.Vdop
+            }),
             GpsStatus m => Envelope("gpsStatus", messageId, timeUtc, new GpsStatusData
             {
                 SatellitesVisible = m.SatellitesVisible,
