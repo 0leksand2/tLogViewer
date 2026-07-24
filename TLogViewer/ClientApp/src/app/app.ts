@@ -24,6 +24,7 @@ import {
 } from './mission-planner-properties/models/mission-planner-properties.const';
 import { SelectedTelemetryPropertiesStorage } from './mission-planner-properties/services/selected-telemetry-properties-storage.service';
 import { FlightPlayerModule } from './flight-player/flight-player.module';
+import { FlightSummaryReportComponent } from './flight-player/components/flight-summary-report';
 import {
   resolveActiveHomePoint,
   resolveFlightHomePoints,
@@ -34,6 +35,7 @@ import {
   resolvePositionTarget,
   sortedPlaybackPoints,
   ensureDerivedPlaybackValues,
+  progressPercentForMs,
 } from './flight-player/utils/playback-timeline';
 import {
   MapDisplaySettings,
@@ -56,6 +58,7 @@ import { FlightArmChangeService } from './core/services/flight-arm-change.servic
     MissionPlannerPropertiesModule,
     ModalModule,
     FlightPlayerModule,
+    FlightSummaryReportComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -74,6 +77,7 @@ export class App {
   protected readonly propertiesModalOpen = signal(false);
   protected readonly settingsModalOpen = signal(false);
   protected readonly helpModalOpen = signal(false);
+  protected readonly summaryModalOpen = signal(false);
   protected readonly displayHeading = this.mapDisplaySettings.displayHeading;
   protected readonly displayTargetPath = this.mapDisplaySettings.displayTargetPath;
   protected readonly displayWind = this.mapDisplaySettings.displayWind;
@@ -335,8 +339,28 @@ export class App {
     this.helpModalOpen.set(true);
   }
 
+  protected openSummaryModal(): void {
+    this.summaryModalOpen.set(true);
+  }
+
   protected onHelpClosed(): void {
     this.helpModalOpen.set(false);
+  }
+
+  protected onSummaryClosed(): void {
+    this.summaryModalOpen.set(false);
+  }
+
+  /** Jump playback to 5 seconds before the selected summary event. */
+  protected onSummarySeek(eventMs: number): void {
+    const points = this.playbackPoints();
+    if (points.length === 0 || !Number.isFinite(eventMs)) {
+      return;
+    }
+
+    this.flightPlaying.set(false);
+    this.flightProgressPercent.set(progressPercentForMs(points, eventMs - 5_000));
+    this.summaryModalOpen.set(false);
   }
 
   protected onPropertiesSaved(result: ModalCloseResult): void {

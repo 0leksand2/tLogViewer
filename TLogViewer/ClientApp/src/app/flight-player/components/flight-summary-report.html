@@ -1,0 +1,229 @@
+<div class="flight-summary">
+  @if (report(); as summary) {
+    <section class="flight-summary__section">
+      <h3 class="flight-summary__heading flight-summary__heading--lg">GPS</h3>
+      <dl class="flight-summary__grid">
+        <dt>GPS present</dt>
+        <dd [class.flight-summary__ok]="summary.gpsExists" [class.flight-summary__bad]="!summary.gpsExists">
+          {{ summary.gpsExists ? 'Yes' : 'No' }}
+          <span class="flight-summary__muted">(max {{ summary.maxSatCount }} sats)</span>
+        </dd>
+
+        <dt>HDOP (avg)</dt>
+        <dd [class]="'flight-summary__hdop flight-summary__hdop--' + hdopTone(summary.hdopHealth)">
+          {{ formatHdop(summary.hdop) }}
+          @if (summary.hdop != null) {
+            <span class="flight-summary__hdop-label">{{ summary.hdopHealthLabel }}</span>
+          }
+        </dd>
+
+        <dt>HDOP range</dt>
+        <dd>
+          @if (summary.hdopSampleCount > 0) {
+            <span [class]="'flight-summary__hdop flight-summary__hdop--' + hdopToneForValue(summary.hdopMin)">
+              {{ formatHdop(summary.hdopMin) }}
+            </span>
+            –
+            <span [class]="'flight-summary__hdop flight-summary__hdop--' + hdopToneForValue(summary.hdopMax)">
+              {{ formatHdop(summary.hdopMax) }}
+            </span>
+            <span class="flight-summary__muted">({{ summary.hdopSampleCount }} samples)</span>
+          } @else {
+            —
+          }
+        </dd>
+      </dl>
+
+      <ul class="flight-summary__legend">
+        <li>
+          <span class="flight-summary__swatch flight-summary__swatch--bad"></span>
+          0–0.1 / 1.5+ unhealthy
+        </li>
+        <li>
+          <span class="flight-summary__swatch flight-summary__swatch--warn"></span>
+          0.1–0.35 / 0.75–1.5 possibly unhealthy
+        </li>
+        <li>
+          <span class="flight-summary__swatch flight-summary__swatch--healthy"></span>
+          0.35–0.75 healthy
+        </li>
+      </ul>
+    </section>
+
+    <section class="flight-summary__section">
+      <h3 class="flight-summary__heading">Spoof detection</h3>
+      <p class="flight-summary__status">
+        Jump threshold: <strong>5 km</strong> from the previous aircraft position.
+      </p>
+      <p
+        class="flight-summary__status"
+        [class.flight-summary__ok]="!summary.spoofDetected"
+        [class.flight-summary__bad]="summary.spoofDetected"
+      >
+        {{ summary.spoofDetected ? 'Spoof detected' : 'No spoof detected' }}
+        @if (summary.spoofEvents.length > 0) {
+          <span class="flight-summary__muted">
+            ({{ summary.spoofEvents.length }} event{{ summary.spoofEvents.length === 1 ? '' : 's' }})
+          </span>
+        }
+      </p>
+
+      @if (summary.spoofEvents.length > 0) {
+        <ul class="flight-summary__events">
+          @for (event of summary.spoofEvents; track event.timestampMs) {
+            <li class="flight-summary__event">
+              <button
+                type="button"
+                class="flight-summary__event-btn"
+                (click)="onEventClick(event.timestampMs)"
+                title="Go to 5 seconds before this event"
+              >
+                <div class="flight-summary__event-time">
+                  {{ formatEventTime(event.timestampMs, event.timestampUtc) }}
+                </div>
+                <div class="flight-summary__event-dist">{{ formatDistanceKm(event.distanceM) }}</div>
+                <div class="flight-summary__event-coords">
+                  <span>
+                    From {{ formatCoord(event.fromLatitudeDeg) }},
+                    {{ formatCoord(event.fromLongitudeDeg) }}
+                  </span>
+                  <span>
+                    To {{ formatCoord(event.toLatitudeDeg) }},
+                    {{ formatCoord(event.toLongitudeDeg) }}
+                  </span>
+                </div>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="flight-summary__section">
+      <h3 class="flight-summary__heading">Magnetometer</h3>
+      <p class="flight-summary__status">
+        Jump threshold: <strong>&gt; 150</strong> points between 2 consecutive MagX / MagY / MagZ / MagField packets.
+      </p>
+
+      <p
+        class="flight-summary__status"
+        [class.flight-summary__ok]="!summary.strongMagneticRadiationDetected"
+        [class.flight-summary__bad]="summary.strongMagneticRadiationDetected"
+      >
+        @if (summary.strongMagneticRadiationDetected) {
+          High probability of strong magnetic radiation
+          <span class="flight-summary__muted">
+            ({{ summary.magRadiationEvents.length }} event{{ summary.magRadiationEvents.length === 1 ? '' : 's' }})
+          </span>
+        } @else {
+          No strong magnetic radiation detected
+        }
+      </p>
+
+      @if (summary.magRadiationEvents.length > 0) {
+        <ul class="flight-summary__events">
+          @for (event of summary.magRadiationEvents; track event.timestampMs + event.fieldName) {
+            <li class="flight-summary__event">
+              <button
+                type="button"
+                class="flight-summary__event-btn"
+                (click)="onEventClick(event.timestampMs)"
+                title="Go to 5 seconds before this event"
+              >
+                <div class="flight-summary__event-time">
+                  {{ formatEventTime(event.timestampMs, event.timestampUtc) }}
+                </div>
+                <div class="flight-summary__event-dist">
+                  {{ event.fieldName }} jump {{ event.jumpPoints | number: '1.0-1' }} points
+                </div>
+                <div class="flight-summary__event-coords">
+                  @if (event.latitudeDeg != null && event.longitudeDeg != null) {
+                    <span>
+                      At {{ formatCoord(event.latitudeDeg) }},
+                      {{ formatCoord(event.longitudeDeg) }}
+                    </span>
+                  } @else {
+                    <span>Coordinates unavailable</span>
+                  }
+                </div>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      <p
+        class="flight-summary__status"
+        [class.flight-summary__warn]="summary.moveMagnetometerAwayFromMotor"
+        [class.flight-summary__ok]="!summary.moveMagnetometerAwayFromMotor"
+      >
+        @if (summary.moveMagnetometerAwayFromMotor) {
+          Need to move magnetometer away from motor
+          @if (summary.magThrottleCorrelation != null) {
+            <span class="flight-summary__muted">
+              (MagField ↔ throttle r = {{ summary.magThrottleCorrelation | number: '1.2-2' }})
+            </span>
+          }
+        } @else {
+          No MagField / throttle coupling detected
+          @if (summary.magThrottleCorrelation != null) {
+            <span class="flight-summary__muted">
+              (r = {{ summary.magThrottleCorrelation | number: '1.2-2' }})
+            </span>
+          }
+        }
+      </p>
+    </section>
+
+    <section class="flight-summary__section">
+      <h3 class="flight-summary__heading">Attitude / yaw</h3>
+
+      <p
+        class="flight-summary__status"
+        [class.flight-summary__warn]="summary.yawErrorGrowing"
+        [class.flight-summary__ok]="!summary.yawErrorGrowing"
+      >
+        @if (summary.yawErrorGrowing) {
+          Yaw error is growing through the flight
+        } @else {
+          Yaw error is not growing through the flight
+        }
+        @if (summary.yawErrorAverageDeg != null) {
+          <span class="flight-summary__muted">
+            (avg {{ summary.yawErrorAverageDeg | number: '1.1-1' }}°)
+          </span>
+        }
+      </p>
+
+      <p
+        class="flight-summary__status"
+        [class]="'flight-summary__hdop flight-summary__hdop--' + yawCogTone(summary.yawCogHealth)"
+      >
+        {{ summary.yawCogHealthLabel }}
+        @if (summary.yawCogDiffAverageDeg != null) {
+          <span class="flight-summary__muted">
+            (avg Δ {{ summary.yawCogDiffAverageDeg | number: '1.1-1' }}°,
+            {{ summary.yawCogSampleCount }} samples)
+          </span>
+        }
+      </p>
+
+      <ul class="flight-summary__legend">
+        <li>
+          <span class="flight-summary__swatch flight-summary__swatch--healthy"></span>
+          &lt;10° good
+        </li>
+        <li>
+          <span class="flight-summary__swatch flight-summary__swatch--warn"></span>
+          10–30° ok
+        </li>
+        <li>
+          <span class="flight-summary__swatch flight-summary__swatch--bad"></span>
+          &gt;30° bad
+        </li>
+      </ul>
+    </section>
+  } @else {
+    <p class="flight-summary__empty">No summary report is available for this flight.</p>
+  }
+</div>

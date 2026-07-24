@@ -115,6 +115,8 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
             BatteryFieldsEnricher.ForwardFill(byMillisecond);
             RemoveNonFiniteNumbers(byMillisecond);
 
+            var summaryReport = FlightSummaryService.Analyze(byMillisecond);
+
             var homePoints = ExtractHomePoints(byMillisecond);
             if (homePoints.Count == 0)
             {
@@ -141,7 +143,8 @@ public sealed class LogAnalyticsService : ILogAnalyticsService
                 ArmChangePoints = armChangePoints,
                 StatusTexts = statusTextsByMs.ToDictionary(
                     static pair => pair.Key,
-                    static pair => (IReadOnlyList<FlightStatusText>)pair.Value)
+                    static pair => (IReadOnlyList<FlightStatusText>)pair.Value),
+                SummaryReport = summaryReport,
             });
         }
 

@@ -30,4 +30,7 @@ public sealed class FlightDto
     /// STATUSTEXT lines keyed by Unix millisecond (separate from flattened telemetry <see cref="Messages"/>).
     /// </summary>
     public required IReadOnlyDictionary<long, IReadOnlyList<FlightStatusText>> StatusTexts { get; init; }
+
+    /// <summary>GPS presence, HDOP, and spoof-jump analysis for this flight.</summary>
+    public required FlightSummaryReport SummaryReport { get; init; }
 }

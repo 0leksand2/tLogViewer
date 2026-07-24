@@ -59,6 +59,26 @@ export function snapProgressPercent(value: number): number {
   return Math.min(100, Math.max(0, Math.round(value * 10) / 10));
 }
 
+/** Maps a Unix-ms timestamp onto 0–100% progress along the playback points span. */
+export function progressPercentForMs(points: readonly number[], targetMs: number): number {
+  if (points.length === 0) {
+    return 0;
+  }
+
+  if (points.length === 1) {
+    return 0;
+  }
+
+  const first = points[0]!;
+  const last = points[points.length - 1]!;
+  if (last === first) {
+    return 0;
+  }
+
+  const clamped = Math.min(last, Math.max(first, targetMs));
+  return snapProgressPercent(((clamped - first) / (last - first)) * 100);
+}
+
 export interface PlaybackHomePoint {
   changedAtMs: number;
   latitudeDeg: number;

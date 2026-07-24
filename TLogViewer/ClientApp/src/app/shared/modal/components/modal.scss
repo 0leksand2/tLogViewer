@@ -30,6 +30,7 @@
   flex-direction: column;
   width: min(100%, 32rem);
   max-height: min(90vh, 40rem);
+  min-width: 0;
   border: 1px solid #e2e5eb;
   border-radius: 10px;
   background: #fff;
@@ -39,6 +40,11 @@
   &--wide {
     width: min(100%, 42rem);
     max-height: min(90vh, 48rem);
+  }
+
+  &--xl {
+    width: min(100%, 56rem);
+    max-height: min(92vh, 52rem);
   }
 }
 
@@ -80,6 +86,7 @@
 
 .modal__body {
   flex: 1;
+  min-width: 0;
   overflow: auto;
   padding: 1rem;
 }

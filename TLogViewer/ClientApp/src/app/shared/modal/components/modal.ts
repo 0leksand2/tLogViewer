@@ -16,7 +16,7 @@ export class ModalComponent {
   readonly cancelLabel = input('Cancel');
   readonly disableSaveWhenInvalid = input(true);
   readonly showCancel = input(true);
-  readonly size = input<'default' | 'wide'>('default');
+  readonly size = input<'default' | 'wide' | 'xl'>('default');
 
   readonly saved = output<ModalCloseResult>();
   readonly cancelled = output<ModalCloseResult>();

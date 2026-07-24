@@ -1,0 +1,221 @@
+:host {
+  display: block;
+}
+
+.flight-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  color: #1a1d24;
+}
+
+.flight-summary__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.flight-summary__heading {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #5c6570;
+
+  &--lg {
+    font-size: 1.125rem;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    color: #1a1d24;
+  }
+}
+
+.flight-summary__grid {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+
+  dt {
+    margin: 0;
+    color: #5c6570;
+    font-size: 0.875rem;
+  }
+
+  dd {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+}
+
+.flight-summary__status {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.flight-summary__ok {
+  color: #0f7b3a;
+}
+
+.flight-summary__bad {
+  color: #b42318;
+}
+
+.flight-summary__warn {
+  color: #c2410c;
+  font-weight: 600;
+}
+
+.flight-summary__hdop {
+  font-weight: 600;
+
+  &--healthy {
+    color: #0f7b3a;
+  }
+
+  &--warn {
+    color: #c2410c;
+  }
+
+  &--bad {
+    color: #b42318;
+  }
+
+  &--unknown {
+    color: #1a1d24;
+  }
+}
+
+.flight-summary__hdop-label {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.flight-summary__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: #5c6570;
+  font-size: 0.75rem;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+}
+
+.flight-summary__swatch {
+  flex-shrink: 0;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 2px;
+
+  &--healthy {
+    background: #0f7b3a;
+  }
+
+  &--warn {
+    background: #c2410c;
+  }
+
+  &--bad {
+    background: #b42318;
+  }
+}
+
+.flight-summary__muted {
+  margin-left: 0.25rem;
+  color: #5c6570;
+  font-weight: 400;
+  font-size: 0.8125rem;
+}
+
+.flight-summary__events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: min(40vh, 22rem);
+  overflow: auto;
+}
+
+.flight-summary__event {
+  padding: 0;
+  border: 1px solid #e2e5eb;
+  border-radius: 6px;
+  background: #f8f9fb;
+  min-width: 0;
+}
+
+.flight-summary__event-btn {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  white-space: normal;
+
+  &:hover {
+    background: #eef2f7;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary, #5d05f5);
+    outline-offset: -2px;
+  }
+}
+
+.flight-summary__event-time {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1a1d24;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.flight-summary__event-dist {
+  margin-top: 0.15rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #b42318;
+  overflow-wrap: anywhere;
+}
+
+.flight-summary__event-coords {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  color: #5c6570;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.flight-summary__empty {
+  margin: 0;
+  color: #5c6570;
+  font-size: 0.9375rem;
+}

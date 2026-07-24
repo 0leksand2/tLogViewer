@@ -53,6 +53,23 @@
     }
   </app-modal>
 
+  <app-modal
+    title="Flight summary"
+    [(open)]="summaryModalOpen"
+    size="xl"
+    saveLabel="Close"
+    [showCancel]="false"
+    (saved)="onSummaryClosed()"
+    (cancelled)="onSummaryClosed()"
+  >
+    @if (summaryModalOpen()) {
+      <app-flight-summary-report
+        [report]="loadedFlight()?.summaryReport ?? null"
+        (seekToMs)="onSummarySeek($any($event))"
+      />
+    }
+  </app-modal>
+
   <div class="app-shell__toolbar">
     @if (flightOptions().length > 0) {
       <app-dropdown
@@ -83,13 +100,39 @@
     </button>
   </div>
 
-  <div class="app-shell__player">
-    <app-flight-player
-      [playbackPoints]="playbackPoints()"
-      [durationSeconds]="selectedFlightDuration()"
-      [(progressPercent)]="flightProgressPercent"
-      [(playing)]="flightPlaying"
-      [(playbackSpeed)]="flightPlaybackSpeed"
-    />
-  </div>
+  @if (loadedFlight(); as flight) {
+    <div class="app-shell__player-dock">
+      <div class="app-shell__summary">
+        <button
+          type="button"
+          class="app-shell__summary-btn"
+          (click)="openSummaryModal()"
+          aria-label="Open flight summary"
+          title="Flight summary"
+        >
+          Summary
+          @if (flight.summaryReport?.spoofDetected) {
+            <span class="app-shell__summary-btn-badge" aria-hidden="true">!</span>
+          }
+        </button>
+      </div>
+      <app-flight-player
+        [playbackPoints]="playbackPoints()"
+        [durationSeconds]="selectedFlightDuration()"
+        [(progressPercent)]="flightProgressPercent"
+        [(playing)]="flightPlaying"
+        [(playbackSpeed)]="flightPlaybackSpeed"
+      />
+    </div>
+  } @else {
+    <div class="app-shell__player">
+      <app-flight-player
+        [playbackPoints]="playbackPoints()"
+        [durationSeconds]="selectedFlightDuration()"
+        [(progressPercent)]="flightProgressPercent"
+        [(playing)]="flightPlaying"
+        [(playbackSpeed)]="flightPlaybackSpeed"
+      />
+    </div>
+  }
 </div>
