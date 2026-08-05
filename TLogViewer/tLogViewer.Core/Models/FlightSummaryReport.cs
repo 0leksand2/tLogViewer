@@ -55,6 +55,42 @@ public sealed class FlightSummaryReport
     public double? YawCogDiffAverageDeg { get; init; }
 
     public int YawCogSampleCount { get; init; }
+
+    /// <summary>
+    /// RC stick channels 1–4 (ch1in–ch4in) usage vs center PWM 1500.
+    /// Always length 4; <see cref="FlightStickChannelUsage.SampleCount"/> is 0 when no data.
+    /// </summary>
+    public required IReadOnlyList<FlightStickChannelUsage> StickChannels { get; init; }
+}
+
+/// <summary>Stick travel usage for one RC input channel relative to PWM center 1500.</summary>
+public sealed class FlightStickChannelUsage
+{
+    /// <summary>Channel number 1–4 (Mission Planner chNin).</summary>
+    public int Channel { get; init; }
+
+    /// <summary>Roll, Pitch, Throttle, or Yaw.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>Flattened field key (e.g. 65_005).</summary>
+    public required string FieldKey { get; init; }
+
+    /// <summary>Peak |PWM − 1500| / 500 as percent of full stick travel (0–100).</summary>
+    public double UsagePercent { get; init; }
+
+    /// <summary>Mean |PWM − 1500| / 500 as percent of full stick travel (0–100). Primary metric.</summary>
+    public double AverageUsagePercent { get; init; }
+
+    /// <summary>Good (&lt;30%), Improve (30–60%), Uncontrolled (&gt;60%), or Unknown.</summary>
+    public required string UsageHealth { get; init; }
+
+    /// <summary>Human-readable usage health label.</summary>
+    public required string UsageHealthLabel { get; init; }
+
+    public int SampleCount { get; init; }
+
+    public double? PwmMin { get; init; }
+    public double? PwmMax { get; init; }
 }
 
 /// <summary>A coordinate jump larger than the spoof threshold.</summary>

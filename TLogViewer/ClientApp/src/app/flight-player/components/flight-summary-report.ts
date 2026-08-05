@@ -75,6 +75,48 @@ export class FlightSummaryReportComponent extends ModalContentBase<null> {
     });
   }
 
+  protected stickChannelLabel(stick: {
+    name: string;
+    channel: number;
+  }): string {
+    this.language.lang();
+    const keyByName: Record<string, string> = {
+      Roll: 'gauges.roll',
+      Pitch: 'gauges.pitch',
+      Throttle: 'gauges.throttle',
+      Yaw: 'gauges.yaw',
+    };
+    const key = keyByName[stick.name];
+    return key ? this.translate.instant(key) : stick.name;
+  }
+
+  protected stickUsageTone(health: string | null | undefined): HdopHealthTone {
+    switch (health) {
+      case 'Good':
+        return 'healthy';
+      case 'Improve':
+        return 'warn';
+      case 'Uncontrolled':
+        return 'bad';
+      default:
+        return 'unknown';
+    }
+  }
+
+  protected stickUsageHealthLabel(health: string | null | undefined): string {
+    this.language.lang();
+    switch (health) {
+      case 'Good':
+        return this.translate.instant('summary.stickHealthGood');
+      case 'Improve':
+        return this.translate.instant('summary.stickHealthImprove');
+      case 'Uncontrolled':
+        return this.translate.instant('summary.stickHealthUncontrolled');
+      default:
+        return this.translate.instant('summary.stickHealthUnknown');
+    }
+  }
+
   protected hdopHealthLabel(health: string | null | undefined): string {
     this.language.lang();
     switch (health) {

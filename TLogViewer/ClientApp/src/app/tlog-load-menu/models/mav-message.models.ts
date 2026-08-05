@@ -61,6 +61,23 @@ export interface FlightMagRadiationEvent {
   longitudeDeg: number | null;
 }
 
+export interface FlightStickChannelUsage {
+  channel: number;
+  /** Roll | Pitch | Throttle | Yaw */
+  name: string;
+  fieldKey: string;
+  /** Peak |PWM−1500|/500 as % of full stick travel (0–100). */
+  usagePercent: number;
+  /** Mean |PWM−1500|/500 as % — primary metric (0–100). */
+  averageUsagePercent: number;
+  /** Good | Improve | Uncontrolled | Unknown */
+  usageHealth: string;
+  usageHealthLabel: string;
+  sampleCount: number;
+  pwmMin: number | null;
+  pwmMax: number | null;
+}
+
 export interface FlightSummaryReport {
   gpsExists: boolean;
   maxSatCount: number;
@@ -84,6 +101,8 @@ export interface FlightSummaryReport {
   yawCogHealthLabel: string;
   yawCogDiffAverageDeg: number | null;
   yawCogSampleCount: number;
+  /** RC stick channels 1–4 usage vs center PWM 1500. */
+  stickChannels: FlightStickChannelUsage[];
 }
 
 export interface Flight extends FlightSummary {

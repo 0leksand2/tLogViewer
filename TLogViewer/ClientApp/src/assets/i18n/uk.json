@@ -194,6 +194,18 @@
     "yawLegendGood": "<10° добре",
     "yawLegendOk": "10–30° прийнятно",
     "yawLegendBad": ">30° погано",
+    "sticks": "Використання стіків",
+    "sticksNote": "Середнє відхилення стіка від центру PWM 1500 (±500 повний хід), лише в ручних режимах (MANUAL, STABILIZE, TRAINING, ACRO, FBWA, FBWB, CRUISE, AUTOTUNE, QSTABILIZE, QHOVER).",
+    "stickCh": "(ch{{n}})",
+    "stickUsageDetail": "(пік {{peak}}%, PWM {{min}}–{{max}}, {{count}} зразків)",
+    "stickNoData": "Немає даних стіків RC у ручних режимах для цього польоту.",
+    "stickHealthGood": "Добре спланований політ",
+    "stickHealthImprove": "Є простір покращити планування маршруту",
+    "stickHealthUncontrolled": "Некерований політ — потрібне більше тренування",
+    "stickHealthUnknown": "Невідомо",
+    "stickLegendGood": "<30% добре спланований політ",
+    "stickLegendImprove": "30–60% є простір покращити планування",
+    "stickLegendUncontrolled": ">60% некерований — тренуйтесь більше",
     "empty": "Для цього польоту звіт недоступний."
   }
 }

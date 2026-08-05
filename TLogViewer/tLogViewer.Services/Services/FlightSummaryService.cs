@@ -1,10 +1,12 @@
+using tLogViewer.Core.Enums.Heartbeat;
 using tLogViewer.Core.Models;
 
 namespace tLogViewer.Services.Services;
 
 /// <summary>
 /// Analyzes flight timeline fields for GPS presence (by sat count), HDOP health,
-/// magnetometer anomalies, and spoof jumps (&gt; 5 km).
+/// magnetometer anomalies, spoof jumps (&gt; 5 km), and RC stick channel usage
+/// during manual / stick-driven flight modes.
 /// </summary>
 public static class FlightSummaryService
 {
@@ -19,6 +21,12 @@ public static class FlightSummaryService
     private const int YawErrorMinSamples = 20;
     private const double YawErrorGrowthDeltaDeg = 5.0;
     private const int YawCogMinSamples = 10;
+    private const double StickPwmCenter = 1500.0;
+    private const double StickPwmHalfRange = 500.0;
+    private const double StickPwmMinValid = 800.0;
+    private const double StickPwmMaxValid = 2200.0;
+    private const double StickUsageGoodMaxPct = 30.0;
+    private const double StickUsageImproveMaxPct = 60.0;
 
     private static readonly string GpsRawLatKey = FlightFieldIds.GpsRawLat;
     private static readonly string GpsRawLonKey = FlightFieldIds.GpsRawLon;
@@ -39,6 +47,24 @@ public static class FlightSummaryService
     private static readonly string ErrorYawKey = FlightFieldIds.BerError;
     private static readonly string AttitudeYawKey = "30_006";
     private static readonly string GpsCogKey = FlightFieldIds.Groundcourse;
+    private static readonly string CustomModeKey = FlightFieldIds.CustomMode;
+
+    /// <summary>
+    /// Modes where the pilot flies with sticks (not mission / guided autopilot).
+    /// </summary>
+    private static readonly HashSet<uint> ManualStickModes =
+    [
+        (uint)FlightMode.MANUAL,
+        (uint)FlightMode.STABILIZE,
+        (uint)FlightMode.TRAINING,
+        (uint)FlightMode.ACRO,
+        (uint)FlightMode.FBWA,
+        (uint)FlightMode.FBWB,
+        (uint)FlightMode.CRUISE,
+        (uint)FlightMode.AUTOTUNE,
+        (uint)FlightMode.QSTABILIZE,
+        (uint)FlightMode.QHOVER,
+    ];
 
     private static readonly (string Name, string Key)[] MagFields =
     [
@@ -46,6 +72,14 @@ public static class FlightSummaryService
         ("MagY", MagYKey),
         ("MagZ", MagZKey),
         ("MagField", MagFieldKey),
+    ];
+
+    private static readonly (int Channel, string Name, string Key)[] StickChannels =
+    [
+        (1, "Roll", FlightFieldIds.Ch1in),
+        (2, "Pitch", FlightFieldIds.Ch2in),
+        (3, "Throttle", FlightFieldIds.Ch3in),
+        (4, "Yaw", FlightFieldIds.Ch4in),
     ];
 
     public static FlightSummaryReport Analyze(IReadOnlyDictionary<long, Dictionary<string, object>> byMillisecond)
@@ -72,10 +106,19 @@ public static class FlightSummaryService
         var throttleSamples = new List<double>();
         var yawErrorSamples = new List<double>();
         var yawCogDiffSamples = new List<double>();
+        var stickAccumulators = StickChannels
+            .Select(static c => new StickUsageAccumulator(c.Channel, c.Name, c.Key))
+            .ToArray();
+        uint? currentFlightMode = null;
 
         foreach (var ms in byMillisecond.Keys.OrderBy(static key => key))
         {
             var atMs = byMillisecond[ms];
+
+            if (TryReadCustomMode(atMs, out var mode))
+            {
+                currentFlightMode = mode;
+            }
 
             var satCount = ReadSatCount(atMs);
             if (satCount > maxSatCount)
@@ -107,6 +150,17 @@ public static class FlightSummaryService
                 && IsPlausibleHeading(gpsCog))
             {
                 yawCogDiffSamples.Add(AbsoluteHeadingDeltaDeg(attitudeYaw, gpsCog));
+            }
+
+            if (currentFlightMode is { } activeMode && ManualStickModes.Contains(activeMode))
+            {
+                foreach (var stick in stickAccumulators)
+                {
+                    if (TryAsDouble(atMs, stick.FieldKey, out var pwm) && IsValidStickPwm(pwm))
+                    {
+                        stick.Add(pwm);
+                    }
+                }
             }
 
             if (TryReadPlaneCoordinate(atMs, out var lat, out var lon))
@@ -221,7 +275,124 @@ public static class FlightSummaryService
             YawCogHealthLabel = yawCogLabel,
             YawCogDiffAverageDeg = yawCogDiffAvg,
             YawCogSampleCount = yawCogDiffSamples.Count,
+            StickChannels = stickAccumulators.Select(static s => s.ToReport()).ToArray(),
         };
+    }
+
+    private static bool IsValidStickPwm(double pwm) =>
+        double.IsFinite(pwm) && pwm >= StickPwmMinValid && pwm <= StickPwmMaxValid;
+
+    /// <summary>
+    /// Average stick deflection bands:
+    /// &lt;30% good planned flight; 30–60% room to improve planning; &gt;60% uncontrolled.
+    /// </summary>
+    public static (string Health, string Label) ClassifyStickUsage(double? averageUsagePercent, int sampleCount)
+    {
+        if (sampleCount <= 0 || averageUsagePercent is not { } value || !double.IsFinite(value))
+        {
+            return ("Unknown", "No manual-mode stick samples");
+        }
+
+        if (value < StickUsageGoodMaxPct)
+        {
+            return ("Good", "Good planned flight");
+        }
+
+        if (value < StickUsageImproveMaxPct)
+        {
+            return ("Improve", "Room to improve route planning");
+        }
+
+        return ("Uncontrolled", "Uncontrolled flight — pilot needs more training");
+    }
+
+    private static bool TryReadCustomMode(IReadOnlyDictionary<string, object> fields, out uint mode)
+    {
+        mode = 0;
+        if (!fields.TryGetValue(CustomModeKey, out var value))
+        {
+            return false;
+        }
+
+        switch (value)
+        {
+            case uint u:
+                mode = u;
+                return true;
+            case int i when i >= 0:
+                mode = (uint)i;
+                return true;
+            case long l when l >= 0 && l <= uint.MaxValue:
+                mode = (uint)l;
+                return true;
+            case ulong ul when ul <= uint.MaxValue:
+                mode = (uint)ul;
+                return true;
+            case double d when double.IsFinite(d) && d >= 0 && d <= uint.MaxValue:
+                mode = (uint)d;
+                return true;
+            case float f when float.IsFinite(f) && f >= 0 && f <= uint.MaxValue:
+                mode = (uint)f;
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private sealed class StickUsageAccumulator
+    {
+        private readonly int _channel;
+        private readonly string _name;
+        private int _count;
+        private double _deflectionSum;
+        private double _maxDeflection;
+        private double? _pwmMin;
+        private double? _pwmMax;
+
+        public StickUsageAccumulator(int channel, string name, string fieldKey)
+        {
+            _channel = channel;
+            _name = name;
+            FieldKey = fieldKey;
+        }
+
+        public string FieldKey { get; }
+
+        public void Add(double pwm)
+        {
+            var deflection = Math.Min(1.0, Math.Abs(pwm - StickPwmCenter) / StickPwmHalfRange);
+            _count++;
+            _deflectionSum += deflection;
+            if (deflection > _maxDeflection)
+            {
+                _maxDeflection = deflection;
+            }
+
+            _pwmMin = _pwmMin is null ? pwm : Math.Min(_pwmMin.Value, pwm);
+            _pwmMax = _pwmMax is null ? pwm : Math.Max(_pwmMax.Value, pwm);
+        }
+
+        public FlightStickChannelUsage ToReport()
+        {
+            var averagePct = _count > 0
+                ? Math.Round((_deflectionSum / _count) * 100.0, 1)
+                : 0;
+            var (health, label) = ClassifyStickUsage(averagePct, _count);
+
+            return new FlightStickChannelUsage
+            {
+                Channel = _channel,
+                Name = _name,
+                FieldKey = FieldKey,
+                UsagePercent = _count > 0 ? Math.Round(_maxDeflection * 100.0, 1) : 0,
+                AverageUsagePercent = averagePct,
+                UsageHealth = health,
+                UsageHealthLabel = label,
+                SampleCount = _count,
+                PwmMin = _pwmMin,
+                PwmMax = _pwmMax,
+            };
+        }
     }
 
     /// <summary>

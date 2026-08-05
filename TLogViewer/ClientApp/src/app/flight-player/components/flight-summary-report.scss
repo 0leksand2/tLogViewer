@@ -106,6 +106,33 @@
   font-weight: 600;
 }
 
+.flight-summary__stick {
+  font-weight: 700;
+
+  &--healthy {
+    color: #0f7b3a;
+  }
+
+  &--warn {
+    color: #c2410c;
+  }
+
+  &--bad {
+    color: #b42318;
+  }
+
+  &--unknown {
+    color: #1a1d24;
+  }
+}
+
+.flight-summary__stick-label {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
 .flight-summary__legend {
   display: flex;
   flex-direction: column;

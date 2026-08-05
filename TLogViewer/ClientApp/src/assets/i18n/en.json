@@ -194,6 +194,18 @@
     "yawLegendGood": "<10° good",
     "yawLegendOk": "10–30° ok",
     "yawLegendBad": ">30° bad",
+    "sticks": "Stick usage",
+    "sticksNote": "Average stick deflection from center PWM 1500 (±500 full travel), counted only in manual / stick modes (MANUAL, STABILIZE, TRAINING, ACRO, FBWA, FBWB, CRUISE, AUTOTUNE, QSTABILIZE, QHOVER).",
+    "stickCh": "(ch{{n}})",
+    "stickUsageDetail": "(peak {{peak}}%, PWM {{min}}–{{max}}, {{count}} samples)",
+    "stickNoData": "No RC stick data in manual modes for this flight.",
+    "stickHealthGood": "Good planned flight",
+    "stickHealthImprove": "Room to improve route planning",
+    "stickHealthUncontrolled": "Uncontrolled flight — more training needed",
+    "stickHealthUnknown": "Unknown",
+    "stickLegendGood": "<30% good planned flight",
+    "stickLegendImprove": "30–60% room to improve planning",
+    "stickLegendUncontrolled": ">60% uncontrolled — train more",
     "empty": "No summary report is available for this flight."
   }
 }
