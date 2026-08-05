@@ -11,7 +11,7 @@
         [attr.aria-controls]="'tab-panel-' + tab.id"
         (click)="selectTab(tab.id)"
       >
-        {{ tab.label }}
+        {{ tab.label | translate }}
       </button>
     }
   </div>

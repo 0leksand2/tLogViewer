@@ -1,6 +1,8 @@
 import { Component, computed, inject } from '@angular/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { CurrentValue } from '../../../core/services/current.value';
 import { FlightFieldIds } from '../../../core/flight-field-ids';
+import { LanguageService } from '../../../core/i18n/language.service';
 
 /** Major compass tick degrees (also used for numeric labels except cardinals). */
 const MAJOR_TICKS = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330] as const;
@@ -8,11 +10,14 @@ const MAJOR_TICKS = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330] as c
 @Component({
   selector: 'app-heading-compass',
   standalone: true,
+  imports: [TranslatePipe],
   templateUrl: './heading-compass.html',
   styleUrl: './heading-compass.scss',
 })
 export class HeadingCompassComponent {
   private readonly currentValue = inject(CurrentValue);
+  private readonly translate = inject(TranslateService);
+  private readonly language = inject(LanguageService);
 
   protected readonly majorTicks = MAJOR_TICKS;
   protected readonly minorTicks = Array.from({ length: 36 }, (_, i) => i * 10).filter(
@@ -28,9 +33,11 @@ export class HeadingCompassComponent {
 
   protected readonly yawLabel = computed(() => `${this.yawDeg().toFixed(0)}°`);
 
-  protected readonly ariaLabel = computed(
-    () => `Heading compass, yaw ${this.yawLabel()}`,
-  );
+  protected readonly ariaLabel = computed(() => {
+    this.language.lang();
+    return this.translate.instant('gauges.compassAria', { yaw: this.yawLabel() });
+  });
+
 
   /**
    * Compass card rotates opposite to yaw so the aircraft (fixed, nose up / north)

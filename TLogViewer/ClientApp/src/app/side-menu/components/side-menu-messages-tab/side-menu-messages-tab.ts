@@ -9,6 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CurrentValue } from '../../../core/services/current.value';
 import { FlightStatusText } from '../../../tlog-load-menu/models/mav-message.models';
 
@@ -39,7 +40,7 @@ const BOTTOM_EPSILON_PX = 8;
 @Component({
   selector: 'app-side-menu-messages-tab',
   standalone: true,
-  imports: [NgClass],
+  imports: [NgClass, TranslatePipe],
   templateUrl: './side-menu-messages-tab.html',
   styleUrl: './side-menu-messages-tab.scss',
 })

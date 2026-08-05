@@ -5,7 +5,7 @@
     (click)="toggle()"
     [attr.aria-expanded]="open()"
     aria-controls="app-side-panel"
-    aria-label="Open menu"
+    [attr.aria-label]="'sideMenu.open' | translate"
   >
     <span class="menu-toggle__bar" aria-hidden="true"></span>
     <span class="menu-toggle__bar" aria-hidden="true"></span>
@@ -20,19 +20,23 @@
   [attr.aria-hidden]="!open()"
 >
   <header class="side-panel__header">
-    <h1 class="side-panel__title">TLog Viewer</h1>
+    <h1 class="side-panel__title">{{ 'app.title' | translate }}</h1>
     <button
       type="button"
       class="side-panel__close"
       (click)="close()"
-      aria-label="Close menu"
+      [attr.aria-label]="'sideMenu.close' | translate"
     >
       &times;
     </button>
   </header>
 
   <div class="side-panel__body">
-    <app-tabs [tabs]="tabs" [(activeTabId)]="activeTabId" ariaLabel="Side menu sections">
+    <app-tabs
+      [tabs]="tabs"
+      [(activeTabId)]="activeTabId"
+      [ariaLabel]="'sideMenu.sectionsAria' | translate"
+    >
       @if (activeTabId() === 'data') {
         <app-side-menu-data-tab
           [properties]="selectedProperties()"
@@ -55,6 +59,6 @@
     type="button"
     class="side-panel__backdrop"
     (click)="close()"
-    aria-label="Dismiss menu"
+    [attr.aria-label]="'sideMenu.dismiss' | translate"
   ></button>
 }

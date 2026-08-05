@@ -1,14 +1,21 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
 import { ToastrService } from 'ngx-toastr';
 import { catchError, throwError } from 'rxjs';
 
 export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
   const toastr = inject(ToastrService);
+  const translate = inject(TranslateService);
+
+  // Translation JSON loads must not toast (and may run before strings exist).
+  if (req.url.includes('/assets/i18n/')) {
+    return next(req);
+  }
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      toastr.error(resolveErrorMessage(error), resolveErrorTitle(error), {
+      toastr.error(resolveErrorMessage(error, translate), resolveErrorTitle(error, translate), {
         timeOut: 6000,
         closeButton: true,
       });
@@ -17,14 +24,14 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
   );
 };
 
-function resolveErrorTitle(error: HttpErrorResponse): string {
+function resolveErrorTitle(error: HttpErrorResponse, translate: TranslateService): string {
   if (error.status === 0) {
-    return 'Network error';
+    return translate.instant('errors.network');
   }
-  return `Error ${error.status}`;
+  return translate.instant('errors.errorStatus', { status: error.status });
 }
 
-function resolveErrorMessage(error: HttpErrorResponse): string {
+function resolveErrorMessage(error: HttpErrorResponse, translate: TranslateService): string {
   const body = error.error as
     | { message?: string; title?: string; error?: string }
     | string
@@ -32,9 +39,8 @@ function resolveErrorMessage(error: HttpErrorResponse): string {
     | undefined;
 
   if (typeof body === 'string' && body.trim()) {
-    // Browser/proxy "Failed to fetch" often means the API process is down or unreachable.
     if (/failed to fetch/i.test(body) || /networkerror/i.test(body)) {
-      return 'Unable to reach the API. Ensure TLogViewer.Web is running on http://localhost:5117.';
+      return translate.instant('errors.apiUnreachable');
     }
     return body;
   }
@@ -52,28 +58,28 @@ function resolveErrorMessage(error: HttpErrorResponse): string {
   }
 
   if (error.status === 0) {
-    return 'Unable to reach the API. Ensure TLogViewer.Web is running on http://localhost:5117.';
+    return translate.instant('errors.apiUnreachable');
   }
 
   if (error.status === 400) {
-    return 'The request was invalid.';
+    return translate.instant('errors.invalidRequest');
   }
 
   if (error.status === 401) {
-    return 'You are not authorized.';
+    return translate.instant('errors.unauthorized');
   }
 
   if (error.status === 403) {
-    return 'Access denied.';
+    return translate.instant('errors.accessDenied');
   }
 
   if (error.status === 404) {
-    return 'The requested resource was not found.';
+    return translate.instant('errors.notFound');
   }
 
   if (error.status >= 500) {
-    return 'The server encountered an error.';
+    return translate.instant('errors.serverError');
   }
 
-  return error.message || 'An unexpected error occurred.';
+  return error.message || translate.instant('errors.unexpected');
 }

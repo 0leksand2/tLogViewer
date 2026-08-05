@@ -1,6 +1,8 @@
 import { Component, computed, inject } from '@angular/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { CurrentValue } from '../../../core/services/current.value';
 import { FlightFieldIds } from '../../../core/flight-field-ids';
+import { LanguageService } from '../../../core/i18n/language.service';
 
 /** viewBox units of horizon shift per degree of pitch. */
 const PITCH_PX_PER_DEG = 1.35;
@@ -13,11 +15,14 @@ const PITCH_TICKS = [-60, -40, -20, -10, 10, 20, 40, 60] as const;
 @Component({
   selector: 'app-vfr-hud',
   standalone: true,
+  imports: [TranslatePipe],
   templateUrl: './vfr-hud.html',
   styleUrl: './vfr-hud.scss',
 })
 export class VfrHudComponent {
   private readonly currentValue = inject(CurrentValue);
+  private readonly translate = inject(TranslateService);
+  private readonly language = inject(LanguageService);
 
   protected readonly pitchTicks = PITCH_TICKS;
   protected readonly pitchPxPerDeg = PITCH_PX_PER_DEG;
@@ -33,9 +38,14 @@ export class VfrHudComponent {
   protected readonly rollLabel = computed(() => formatAttitude(this.rollDeg()));
   protected readonly pitchLabel = computed(() => formatAttitude(this.pitchDeg()));
 
-  protected readonly ariaLabel = computed(
-    () => `VFR HUD, roll ${this.rollLabel()}, pitch ${this.pitchLabel()}`,
-  );
+  protected readonly ariaLabel = computed(() => {
+    this.language.lang();
+    return this.translate.instant('gauges.vfrAria', {
+      roll: this.rollLabel(),
+      pitch: this.pitchLabel(),
+    });
+  });
+
 
   /** Horizon ball: roll rotation then pitch translation (nose-up → horizon down). */
   protected readonly horizonTransform = computed(() => {

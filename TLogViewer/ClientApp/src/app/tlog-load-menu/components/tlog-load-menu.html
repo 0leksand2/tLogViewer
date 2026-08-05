@@ -1,4 +1,4 @@
-<app-spinner [visible]="uploading()" message="Uploading log file…" />
+<app-spinner [visible]="uploading()" [message]="'upload.uploadingFile' | translate" />
 
 <div class="tlog-load">
   <button
@@ -8,17 +8,22 @@
     [attr.aria-expanded]="menuOpen()"
     aria-haspopup="menu"
     aria-controls="tlog-load-popup"
-    [attr.aria-label]="menuOpen() ? 'Close load menu' : 'Open load menu'"
+    [attr.aria-label]="(menuOpen() ? 'upload.closeMenu' : 'upload.openMenu') | translate"
   >
-    Upload Log
+    {{ 'upload.uploadLog' | translate }}
   </button>
 
   @if (menuOpen()) {
-    <div id="tlog-load-popup" class="tlog-load__popup" role="menu" aria-label="Load tlog">
-      <p class="tlog-load__title">TLog file</p>
+    <div
+      id="tlog-load-popup"
+      class="tlog-load__popup"
+      role="menu"
+      [attr.aria-label]="'upload.loadTlog' | translate"
+    >
+      <p class="tlog-load__title">{{ 'upload.tlogFile' | translate }}</p>
 
       <button type="button" class="tlog-load__action" role="menuitem" (click)="openFilePicker()">
-        Choose .tlog…
+        {{ 'upload.chooseFile' | translate }}
       </button>
 
       <label class="tlog-load__option">
@@ -27,7 +32,7 @@
           [checked]="splitIntoFlights()"
           (change)="onSplitIntoFlightsChange($event)"
         />
-        <span>Split into flights</span>
+        <span>{{ 'upload.splitIntoFlights' | translate }}</span>
       </label>
 
       @if (selectedFile(); as file) {
@@ -39,7 +44,7 @@
           (click)="uploadSelected()"
           [disabled]="uploading()"
         >
-          {{ uploading() ? 'Uploading…' : 'Upload to server' }}
+          {{ (uploading() ? 'upload.uploading' : 'upload.uploadToServer') | translate }}
         </button>
       }
     </div>

@@ -1,21 +1,26 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FlightSummaryReport } from '../../tlog-load-menu/models/mav-message.models';
 import { ModalContentHostDirective } from '../../shared/modal/directives/modal-content-host.directive';
 import { ModalContentBase } from '../../shared/modal/models/modal-content.model';
+import { LanguageService } from '../../core/i18n/language.service';
 
 export type HdopHealthTone = 'healthy' | 'warn' | 'bad' | 'unknown';
 
 @Component({
   selector: 'app-flight-summary-report',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, TranslatePipe],
   hostDirectives: [ModalContentHostDirective],
   providers: [{ provide: ModalContentBase, useExisting: FlightSummaryReportComponent }],
   templateUrl: './flight-summary-report.html',
   styleUrl: './flight-summary-report.scss',
 })
 export class FlightSummaryReportComponent extends ModalContentBase<null> {
+  private readonly translate = inject(TranslateService);
+  private readonly language = inject(LanguageService);
+
   readonly report = input<FlightSummaryReport | null>(null);
   /** Emits the event timestamp (Unix ms); parent seeks to 5s before it. */
   readonly seekToMs = output<number>();
@@ -32,6 +37,7 @@ export class FlightSummaryReportComponent extends ModalContentBase<null> {
   }
 
   protected formatEventTime(timestampMs: number, fallbackUtc?: string | null): string {
+    this.language.lang();
     if (Number.isFinite(timestampMs)) {
       const date = new Date(timestampMs);
       if (!Number.isNaN(date.getTime())) {
@@ -44,12 +50,13 @@ export class FlightSummaryReportComponent extends ModalContentBase<null> {
       }
     }
 
-    return fallbackUtc?.trim() || '—';
+    return fallbackUtc?.trim() || this.translate.instant('common.emDash');
   }
 
   protected formatHdop(value: number | null | undefined): string {
+    this.language.lang();
     if (value == null || !Number.isFinite(value)) {
-      return '—';
+      return this.translate.instant('common.emDash');
     }
     return value.toFixed(2);
   }
@@ -59,10 +66,41 @@ export class FlightSummaryReportComponent extends ModalContentBase<null> {
   }
 
   protected formatDistanceKm(meters: number): string {
+    this.language.lang();
     if (!Number.isFinite(meters)) {
-      return '—';
+      return this.translate.instant('common.emDash');
     }
-    return `${(meters / 1000).toFixed(2)} km`;
+    return this.translate.instant('summary.distanceKm', {
+      value: (meters / 1000).toFixed(2),
+    });
+  }
+
+  protected hdopHealthLabel(health: string | null | undefined): string {
+    this.language.lang();
+    switch (health) {
+      case 'Healthy':
+        return this.translate.instant('summary.hdopHealthy');
+      case 'PossiblyUnhealthy':
+        return this.translate.instant('summary.hdopPossiblyUnhealthy');
+      case 'Unhealthy':
+        return this.translate.instant('summary.hdopUnhealthy');
+      default:
+        return this.translate.instant('summary.hdopUnknown');
+    }
+  }
+
+  protected yawCogHealthLabel(health: string | null | undefined): string {
+    this.language.lang();
+    switch (health) {
+      case 'Good':
+        return this.translate.instant('summary.yawCogGood');
+      case 'Ok':
+        return this.translate.instant('summary.yawCogOk');
+      case 'Bad':
+        return this.translate.instant('summary.yawCogBad');
+      default:
+        return this.translate.instant('summary.yawCogUnknown');
+    }
   }
 
   protected hdopTone(health: string | null | undefined): HdopHealthTone {

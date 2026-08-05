@@ -1,12 +1,27 @@
 <div class="map-settings">
-  <p class="map-settings__title">Map display</p>
+  <label class="map-settings__option map-settings__option--language">
+    <span class="map-settings__gps-source-label">{{ 'settings.language.label' | translate }}</span>
+    <select
+      class="map-settings__select map-settings__select--gps"
+      (change)="onLanguageChange($any($event.target).value)"
+      [attr.aria-label]="'settings.language.label' | translate"
+    >
+      @for (option of languages; track option.value) {
+        <option [value]="option.value" [selected]="currentLanguage() === option.value">
+          {{ option.labelKey | translate }}
+        </option>
+      }
+    </select>
+  </label>
+
+  <p class="map-settings__title">{{ 'settings.mapDisplay' | translate }}</p>
 
   <label class="map-settings__option map-settings__option--gps-source">
-    <span class="map-settings__gps-source-label">GPS source</span>
+    <span class="map-settings__gps-source-label">{{ 'settings.gpsSource' | translate }}</span>
     <select
       class="map-settings__select map-settings__select--gps"
       (change)="onGpsSourceChange($any($event.target).value)"
-      aria-label="GPS source"
+      [attr.aria-label]="'settings.gpsSource' | translate"
     >
       @for (option of gpsSourceOptions; track option.value) {
         <option [value]="option.value" [selected]="draftGpsSource() === option.value">
@@ -22,7 +37,7 @@
       [checked]="draftHeading()"
       (change)="onDisplayHeadingChange($any($event.target).checked)"
     />
-    <span>Display heading</span>
+    <span>{{ 'settings.displayHeading' | translate }}</span>
     <span class="map-settings__swatch map-settings__swatch--heading" aria-hidden="true"></span>
   </label>
 
@@ -32,7 +47,7 @@
       [checked]="draftTargetPath()"
       (change)="onDisplayTargetPathChange($any($event.target).checked)"
     />
-    <span>Display target path</span>
+    <span>{{ 'settings.displayTargetPath' | translate }}</span>
     <span class="map-settings__swatch map-settings__swatch--target" aria-hidden="true"></span>
   </label>
 
@@ -42,7 +57,7 @@
       [checked]="draftWind()"
       (change)="onDisplayWindChange($any($event.target).checked)"
     />
-    <span>Display wind</span>
+    <span>{{ 'settings.displayWind' | translate }}</span>
     <span class="map-settings__swatch map-settings__swatch--wind" aria-hidden="true">
       <span class="map-settings__swatch-line"></span>
       <span class="map-settings__swatch-arrow"></span>
@@ -55,7 +70,7 @@
       [checked]="draftTrail()"
       (change)="onDisplayTrailChange($any($event.target).checked)"
     />
-    <span>Display trail</span>
+    <span>{{ 'settings.displayTrail' | translate }}</span>
   </label>
 
   <label class="map-settings__option map-settings__option--nested">
@@ -65,26 +80,26 @@
       [disabled]="!draftTrail()"
       (change)="onDisplayFullTrailChange($any($event.target).checked)"
     />
-    <span>Full flight trail</span>
+    <span>{{ 'settings.fullFlightTrail' | translate }}</span>
   </label>
   <p class="map-settings__note">
-    Showing the full flight trail may seriously affect performance on long logs.
+    {{ 'settings.fullTrailNote' | translate }}
   </p>
 
   <label class="map-settings__option map-settings__option--trail-length">
-    <span class="map-settings__trail-length-label">Trail length</span>
+    <span class="map-settings__trail-length-label">{{ 'settings.trailLength' | translate }}</span>
     <select
       class="map-settings__select"
       [disabled]="!draftTrail() || draftFullTrail()"
       (change)="onTrailLengthChange($any($event.target).value)"
-      aria-label="Trail length"
+      [attr.aria-label]="'settings.trailLength' | translate"
     >
       @for (option of trailLengthOptions; track option.seconds) {
         <option
           [value]="option.seconds"
           [selected]="draftTrailLengthSeconds() === option.seconds"
         >
-          {{ option.label }}
+          {{ ('settings.trail.' + option.seconds) | translate }}
         </option>
       }
     </select>

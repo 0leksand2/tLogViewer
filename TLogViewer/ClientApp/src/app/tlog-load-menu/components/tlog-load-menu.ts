@@ -8,13 +8,14 @@ import {
   viewChild,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { SpinnerComponent } from '../../shared/spinner/components/spinner';
 import { TlogService, TlogUploadResult } from '../services/tlog.service';
 
 @Component({
   selector: 'app-tlog-load-menu',
   standalone: true,
-  imports: [SpinnerComponent],
+  imports: [SpinnerComponent, TranslatePipe],
   templateUrl: './tlog-load-menu.html',
   styleUrl: './tlog-load-menu.scss',
 })
@@ -22,6 +23,7 @@ export class TlogLoadMenuComponent {
   readonly uploaded = output<TlogUploadResult>();
 
   private readonly tlogService = inject(TlogService);
+  private readonly translate = inject(TranslateService);
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly fileInput = viewChild.required<ElementRef<HTMLInputElement>>('fileInput');
 
@@ -61,7 +63,7 @@ export class TlogLoadMenuComponent {
 
     if (!file.name.toLowerCase().endsWith('.tlog')) {
       this.selectedFile.set(null);
-      this.statusMessage.set('Please choose a .tlog file.');
+      this.statusMessage.set(this.translate.instant('upload.chooseTlog'));
       this.statusTone.set('error');
       return;
     }
@@ -83,13 +85,18 @@ export class TlogLoadMenuComponent {
     }
 
     this.uploading.set(true);
-    this.statusMessage.set('Uploading…');
+    this.statusMessage.set(this.translate.instant('upload.uploading'));
     this.statusTone.set(null);
 
     this.tlogService.upload(file, this.splitIntoFlights()).subscribe({
       next: (result) => {
         this.uploading.set(false);
-        this.statusMessage.set(`Uploaded ${result.fileName} (${result.flightCount} flight(s))`);
+        this.statusMessage.set(
+          this.translate.instant('upload.uploaded', {
+            fileName: result.fileName,
+            count: result.flightCount,
+          }),
+        );
         this.statusTone.set('ok');
         this.uploaded.emit(result);
       },
@@ -127,10 +134,10 @@ export class TlogLoadMenuComponent {
         return body.message;
       }
       if (err.status === 0) {
-        return 'Server unreachable. Is the API running?';
+        return this.translate.instant('upload.serverUnreachable');
       }
-      return `Upload failed (${err.status}).`;
+      return this.translate.instant('upload.uploadFailedStatus', { status: err.status });
     }
-    return 'Upload failed.';
+    return this.translate.instant('upload.uploadFailed');
   }
 }

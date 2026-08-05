@@ -1,8 +1,8 @@
 <div class="messages-tab">
   @if (rows().length === 0) {
-    <p class="messages-tab__empty">No status messages in this flight.</p>
+    <p class="messages-tab__empty">{{ 'sideMenu.noStatusMessages' | translate }}</p>
   } @else if (visibleRows().length === 0) {
-    <p class="messages-tab__empty">No status messages yet at this time.</p>
+    <p class="messages-tab__empty">{{ 'sideMenu.noStatusMessagesYet' | translate }}</p>
   } @else {
     <div class="messages-tab__viewport">
       <div
@@ -11,7 +11,7 @@
         (scroll)="onListScroll()"
         role="log"
         aria-live="polite"
-        aria-label="Flight status messages"
+        [attr.aria-label]="'sideMenu.statusMessagesAria' | translate"
       >
         @for (row of visibleRows(); track row.id) {
           <p
@@ -31,8 +31,8 @@
           type="button"
           class="messages-tab__to-bottom"
           (click)="scrollToBottomAndFollow()"
-          aria-label="Scroll to bottom and follow playback"
-          title="Scroll to bottom"
+          [attr.aria-label]="'sideMenu.scrollToBottomAria' | translate"
+          [attr.title]="'sideMenu.scrollToBottomTitle' | translate"
         >
           <span class="messages-tab__to-bottom-arrow" aria-hidden="true"></span>
         </button>

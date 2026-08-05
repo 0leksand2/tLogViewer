@@ -1,9 +1,11 @@
 import { Component, input, model } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { TabItem } from '../models/tab-item.model';
 
 @Component({
   selector: 'app-tabs',
   standalone: true,
+  imports: [TranslatePipe],
   templateUrl: './tabs.html',
   styleUrl: './tabs.scss',
 })

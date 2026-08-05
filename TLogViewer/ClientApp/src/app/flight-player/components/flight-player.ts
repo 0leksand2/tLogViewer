@@ -13,7 +13,9 @@ import { DropdownOption } from '../../shared/dropdown/models/dropdown-option.mod
 import { FlightModeChangeService } from '../../core/services/flight-mode-change.service';
 import { FlightArmChangeService } from '../../core/services/flight-arm-change.service';
 import { flightModeLabel } from '../../core/flight-mode';
+import { LanguageService } from '../../core/i18n/language.service';
 import { snapProgressPercent } from '../utils/playback-timeline';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 /** Playback rate as percent of realtime (100 = 1 ms wall-clock → 1 ms of log). */
 const PLAYBACK_SPEEDS = [1, 10, 50, 75, 100, 125, 150, 200, 500, 1000] as const;
@@ -24,7 +26,7 @@ const MODE_MARKER_SEEK_BEFORE_MS = 5_000;
 @Component({
   selector: 'app-flight-player',
   standalone: true,
-  imports: [DropdownModule],
+  imports: [DropdownModule, TranslatePipe],
   templateUrl: './flight-player.html',
   styleUrl: './flight-player.scss',
 })
@@ -51,6 +53,8 @@ export class FlightPlayerComponent implements OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private readonly flightModeChanges = inject(FlightModeChangeService);
   private readonly flightArmChanges = inject(FlightArmChangeService);
+  private readonly language = inject(LanguageService);
+  private readonly translate = inject(TranslateService);
   private rafId: number | null = null;
   private lastFrameMs: number | null = null;
 
@@ -90,6 +94,7 @@ export class FlightPlayerComponent implements OnDestroy {
 
   /** Arm/disarm ticks positioned on the slider track (0–100%). */
   protected readonly armChangeMarkers = computed(() => {
+    this.language.lang();
     const points = this.playbackPoints();
     const markers = this.flightArmChanges.markers();
     if (points.length < 2 || markers.length === 0) {
@@ -110,7 +115,7 @@ export class FlightPlayerComponent implements OnDestroy {
         percent: Math.min(100, Math.max(0, ((marker.changedAtMs - first) / span) * 100)),
         armed: marker.armed,
         changedAtMs: marker.changedAtMs,
-        label: marker.armed ? 'arm' : 'disarm',
+        label: this.translate.instant(marker.armed ? 'player.arm' : 'player.disarm'),
       }))
       .filter((marker) => Number.isFinite(marker.percent));
   });

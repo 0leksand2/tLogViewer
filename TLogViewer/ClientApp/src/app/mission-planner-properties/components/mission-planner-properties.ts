@@ -1,4 +1,5 @@
 import { Component, computed, effect, input, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ModalContentHostDirective } from '../../shared/modal/directives/modal-content-host.directive';
 import { ModalContentBase } from '../../shared/modal/models/modal-content.model';
 import {
@@ -15,6 +16,7 @@ interface MissionPlannerPropertyGroup {
 @Component({
   selector: 'app-mission-planner-properties',
   standalone: true,
+  imports: [TranslatePipe],
   hostDirectives: [ModalContentHostDirective],
   providers: [{ provide: ModalContentBase, useExisting: MissionPlannerPropertiesComponent }],
   templateUrl: './mission-planner-properties.html',

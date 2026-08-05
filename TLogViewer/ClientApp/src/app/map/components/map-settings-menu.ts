@@ -1,6 +1,8 @@
-import { Component, effect, input, signal } from '@angular/core';
+import { Component, effect, inject, input, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ModalContentHostDirective } from '../../shared/modal/directives/modal-content-host.directive';
 import { ModalContentBase } from '../../shared/modal/models/modal-content.model';
+import { APP_LANGUAGES, AppLanguage, LanguageService } from '../../core/i18n/language.service';
 import { DEFAULT_GPS_SOURCE, type MapGpsSource } from '../models/map-gps-source';
 import {
   GPS_SOURCE_OPTIONS,
@@ -11,12 +13,15 @@ import {
 @Component({
   selector: 'app-map-settings-menu',
   standalone: true,
+  imports: [TranslatePipe],
   hostDirectives: [ModalContentHostDirective],
   providers: [{ provide: ModalContentBase, useExisting: MapSettingsMenuComponent }],
   templateUrl: './map-settings-menu.html',
   styleUrl: './map-settings-menu.scss',
 })
 export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySettings> {
+  private readonly languageService = inject(LanguageService);
+
   readonly displayHeading = input(true);
   readonly displayTargetPath = input(true);
   readonly displayWind = input(true);
@@ -27,6 +32,8 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
 
   protected readonly trailLengthOptions = TRAIL_LENGTH_OPTIONS;
   protected readonly gpsSourceOptions = GPS_SOURCE_OPTIONS;
+  protected readonly languages = APP_LANGUAGES;
+  protected readonly currentLanguage = this.languageService.lang;
 
   protected readonly draftHeading = signal(true);
   protected readonly draftTargetPath = signal(true);
@@ -59,6 +66,12 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
       trailLengthSeconds: Number(this.draftTrailLengthSeconds()),
       gpsSource: this.draftGpsSource(),
     };
+  }
+
+  protected onLanguageChange(value: string): void {
+    if (value === 'en' || value === 'uk') {
+      this.languageService.setLanguage(value as AppLanguage);
+    }
   }
 
   protected onDisplayHeadingChange(checked: boolean): void {

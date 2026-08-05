@@ -3,7 +3,7 @@
     <button
       type="button"
       class="modal__backdrop"
-      aria-label="Close dialog"
+      [attr.aria-label]="'common.closeDialog' | translate"
       (click)="onBackdropClick()"
     ></button>
 
@@ -13,11 +13,16 @@
       [class.modal__dialog--xl]="size() === 'xl'"
       role="dialog"
       aria-modal="true"
-      [attr.aria-label]="title() || 'Dialog'"
+      [attr.aria-label]="title() || ('common.dialog' | translate)"
     >
       <header class="modal__header">
         <h2 class="modal__title">{{ title() }}</h2>
-        <button type="button" class="modal__close" aria-label="Close" (click)="onCancel()">
+        <button
+          type="button"
+          class="modal__close"
+          [attr.aria-label]="'common.close' | translate"
+          (click)="onCancel()"
+        >
           &times;
         </button>
       </header>
@@ -29,11 +34,11 @@
       <footer class="modal__footer">
         @if (showCancel()) {
           <button type="button" class="modal__btn modal__btn--secondary" (click)="onCancel()">
-            {{ cancelLabel() }}
+            {{ cancelLabel() || ('common.cancel' | translate) }}
           </button>
         }
         <button type="button" class="modal__btn modal__btn--primary" (click)="onSave()">
-          {{ saveLabel() }}
+          {{ saveLabel() || ('common.save' | translate) }}
         </button>
       </footer>
     </div>

@@ -3,25 +3,35 @@
     <input
       type="text"
       class="mp-props__search-input"
-      placeholder="Search properties…"
+      [placeholder]="'properties.searchPlaceholder' | translate"
       role="searchbox"
       [value]="searchQuery()"
       (input)="onSearchInput($event)"
-      aria-label="Search properties"
+      [attr.aria-label]="'properties.searchAria' | translate"
     />
     @if (searchQuery()) {
-      <button type="button" class="mp-props__search-clear" (click)="clearSearch()" aria-label="Clear search">
+      <button
+        type="button"
+        class="mp-props__search-clear"
+        (click)="clearSearch()"
+        [attr.aria-label]="'properties.clearSearch' | translate"
+      >
         &times;
       </button>
     }
   </div>
 
   @if (groupedProperties().length === 0) {
-    <p class="mp-props__empty">No properties match “{{ searchQuery() }}”.</p>
+    <p class="mp-props__empty">
+      {{ 'properties.noMatch' | translate: { query: searchQuery() } }}
+    </p>
   } @else {
     <div class="mp-props__list">
       @for (group of groupedProperties(); track group.letter) {
-        <section class="mp-props__section" [attr.aria-label]="'Properties starting with ' + group.letter">
+        <section
+          class="mp-props__section"
+          [attr.aria-label]="'properties.groupAria' | translate: { letter: group.letter }"
+        >
           <h3 class="mp-props__letter">{{ group.letter }}</h3>
           <ul class="mp-props__grid" role="list">
             @for (property of group.properties; track property.key) {

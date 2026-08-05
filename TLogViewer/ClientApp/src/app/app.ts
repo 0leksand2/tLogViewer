@@ -45,6 +45,8 @@ import { buildFlightTrail, TRAIL_SAMPLE_MS } from './map/utils/flight-trail';
 import { CurrentValue } from './core/services/current.value';
 import { FlightModeChangeService } from './core/services/flight-mode-change.service';
 import { FlightArmChangeService } from './core/services/flight-arm-change.service';
+import { LanguageService } from './core/i18n/language.service';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-root',
@@ -59,6 +61,7 @@ import { FlightArmChangeService } from './core/services/flight-arm-change.servic
     ModalModule,
     FlightPlayerModule,
     FlightSummaryReportComponent,
+    TranslatePipe,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -70,6 +73,8 @@ export class App {
   private readonly flightModeChanges = inject(FlightModeChangeService);
   private readonly flightArmChanges = inject(FlightArmChangeService);
   private readonly mapDisplaySettings = inject(MapDisplaySettingsService);
+  private readonly language = inject(LanguageService);
+  private readonly translate = inject(TranslateService);
   private readonly flightSelection$ = new Subject<{ sessionId: string; flightId: string } | null>();
   private lastTrailBuildKey = '';
 
@@ -119,12 +124,13 @@ export class App {
     sortedPlaybackPoints(this.loadedFlight()?.messages),
   );
 
-  protected readonly flightOptions = computed<DropdownOption[]>(() =>
-    this.flightSummaries().map((flight, index) => ({
+  protected readonly flightOptions = computed<DropdownOption[]>(() => {
+    this.language.lang();
+    return this.flightSummaries().map((flight, index) => ({
       value: flight.id,
       label: this.formatFlightOption(flight, index),
-    })),
-  );
+    }));
+  });
 
   private readonly map = viewChild(MapComponent);
 
@@ -213,6 +219,7 @@ export class App {
           plane.navBearing,
           plane.windDir,
           plane.windSpeed,
+          { recenter: !home },
         );
 
         const modeMarkers = this.flightModeChanges.markers();
@@ -407,7 +414,11 @@ export class App {
 
   private formatFlightOption(flight: FlightSummary, index: number): string {
     const duration = this.formatDuration(flight.durationSeconds);
-    return `Flight ${index + 1} · ${duration} · ${flight.messageCount} msgs`;
+    return this.translate.instant('app.flightOption', {
+      index: index + 1,
+      duration,
+      count: flight.messageCount,
+    });
   }
 
   private formatDuration(seconds: number): string {

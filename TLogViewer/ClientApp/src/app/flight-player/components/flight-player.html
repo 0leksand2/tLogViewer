@@ -2,7 +2,7 @@
   class="flight-player"
   [class.flight-player--disabled]="!hasPlayback()"
   role="group"
-  aria-label="Flight playback"
+  [attr.aria-label]="'player.aria' | translate"
 >
   <div class="flight-player__controls">
     <button
@@ -10,7 +10,7 @@
       class="flight-player__btn"
       (click)="togglePlay()"
       [disabled]="!hasPlayback()"
-      [attr.aria-label]="playing() ? 'Pause' : 'Play'"
+      [attr.aria-label]="(playing() ? 'player.pause' : 'player.play') | translate"
     >
       @if (playing()) {
         <span class="flight-player__icon flight-player__icon--pause" aria-hidden="true"></span>
@@ -24,7 +24,7 @@
       class="flight-player__btn"
       (click)="forward()"
       [disabled]="!hasPlayback()"
-      [attr.aria-label]="'Forward ' + forwardPercent + '%'"
+      [attr.aria-label]="'player.forward' | translate: { percent: forwardPercent }"
     >
       <span class="flight-player__icon flight-player__icon--forward" aria-hidden="true"></span>
     </button>
@@ -36,8 +36,8 @@
         (valueChange)="onSpeedChange($event)"
         [openUpward]="true"
         [disabled]="!hasPlayback()"
-        placeholder="Speed"
-        ariaLabel="Playback speed"
+        [placeholder]="'player.speed' | translate"
+        [ariaLabel]="'player.speedAria' | translate"
       />
     </div>
   </div>
@@ -51,12 +51,12 @@
             type="button"
             class="flight-player__marker"
             [style.left.%]="marker.percent"
-            [attr.aria-label]="'FLT MODE: ' + marker.label"
+            [attr.aria-label]="'player.fltMode' | translate: { mode: marker.label }"
             (click)="seekToModeMarker(marker.changedAtMs)"
           >
             <span class="flight-player__marker-tick" aria-hidden="true"></span>
             <span class="flight-player__marker-popup" role="tooltip">
-              FLT MODE: {{ marker.label }}
+              {{ 'player.fltMode' | translate: { mode: marker.label } }}
             </span>
           </button>
         }
@@ -86,7 +86,7 @@
         [value]="progressPercent()"
         [disabled]="!hasPlayback()"
         (input)="onSliderInput($event)"
-        aria-label="Flight progress"
+        [attr.aria-label]="'player.progressAria' | translate"
       />
     </div>
     <span class="flight-player__percent">{{ endLabel() }}</span>

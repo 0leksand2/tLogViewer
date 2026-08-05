@@ -5,10 +5,10 @@
   </div>
 
   <button type="button" class="data-tab__action" (click)="requestProperties()">
-    Telemetry properties
+    {{ 'sideMenu.telemetryProperties' | translate }}
   </button>
   @if (tiles().length === 0) {
-    <p class="data-tab__empty">No telemetry properties selected.</p>
+    <p class="data-tab__empty">{{ 'sideMenu.noPropertiesSelected' | translate }}</p>
   } @else {
     <div
       class="data-tab__grid"

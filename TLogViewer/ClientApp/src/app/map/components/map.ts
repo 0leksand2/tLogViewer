@@ -8,24 +8,34 @@ import {
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { MapDisplaySettingsService } from '../services/map-display-settings.service';
 import { FlightTrailVertex } from '../utils/flight-trail';
 import { flightModeLabel } from '../../core/flight-mode';
+import { LanguageService } from '../../core/i18n/language.service';
 
 export interface HomeLocationOptions {
   /** Pan/zoom the map when the active flight changes. */
   recenter?: boolean;
 }
 
+export interface PlaneLocationOptions {
+  /** Pan/zoom the map when the active flight changes (e.g. no home point). */
+  recenter?: boolean;
+}
+
 @Component({
   selector: 'app-map',
   standalone: true,
+  imports: [TranslatePipe],
   templateUrl: './map.html',
   styleUrl: './map.scss',
 })
 export class MapComponent implements OnDestroy {
   private readonly mapContainer = viewChild.required<ElementRef<HTMLDivElement>>('mapContainer');
   private readonly displaySettings = inject(MapDisplaySettingsService);
+  private readonly translate = inject(TranslateService);
+  private readonly language = inject(LanguageService);
   private map?: L.Map;
   private homeMarker?: L.Marker;
   private planeMarker?: L.Marker;
@@ -44,6 +54,8 @@ export class MapComponent implements OnDestroy {
     navBearing: number | null;
     windDir: number | null;
     windSpeed: number | null;
+    recenter: boolean;
+    flightKey: string | null;
   } | null = null;
   private pendingTarget: { lat: number; lng: number; altitudeM: number | null } | null = null;
   private lastRecenterFlightKey: string | null = null;
@@ -85,6 +97,16 @@ export class MapComponent implements OnDestroy {
     });
 
     effect(() => {
+      this.language.lang();
+      if (this.lastHomeState) {
+        this.applyHomeAltitudeTooltip(this.lastHomeState.altitudeM);
+      }
+      if (this.lastTargetState) {
+        this.applyTargetAltitudeTooltip(this.lastTargetState.altitudeM);
+      }
+    });
+
+    effect(() => {
       if (!this.displaySettings.displayTrail()) {
         this.clearFlightTrail();
       }
@@ -119,7 +141,6 @@ export class MapComponent implements OnDestroy {
       !Number.isFinite(longitudeDeg)
     ) {
       this.pendingHome = null;
-      this.lastRecenterFlightKey = null;
       this.lastHomeState = null;
       this.lastHomeAltitudeM = null;
       this.homeMarker?.unbindTooltip();
@@ -155,6 +176,7 @@ export class MapComponent implements OnDestroy {
     navBearingDeg: number | null = null,
     windDirDeg: number | null = null,
     windSpeedMS: number | null = null,
+    options: PlaneLocationOptions = {},
   ): void {
     if (
       latitudeDeg === null ||
@@ -174,6 +196,11 @@ export class MapComponent implements OnDestroy {
       this.lastPlaneFlightKey = flightKey;
     }
 
+    const recenter =
+      options.recenter === true &&
+      flightKey !== null &&
+      flightKey !== this.lastRecenterFlightKey;
+
     if (!this.map) {
       this.pendingPlane = {
         lat: latitudeDeg,
@@ -182,6 +209,8 @@ export class MapComponent implements OnDestroy {
         navBearing: navBearingDeg,
         windDir: windDirDeg,
         windSpeed: windSpeedMS,
+        recenter,
+        flightKey,
       };
       return;
     }
@@ -193,6 +222,8 @@ export class MapComponent implements OnDestroy {
       navBearingDeg,
       windDirDeg,
       windSpeedMS,
+      recenter,
+      flightKey,
     );
   }
 
@@ -297,7 +328,9 @@ export class MapComponent implements OnDestroy {
       });
 
       if (vertex.isModeChange) {
-        marker.bindTooltip(`FLT MODE: ${flightModeLabel(vertex.customMode)}`, {
+        marker.bindTooltip(
+          this.translate.instant('map.fltMode', { mode: flightModeLabel(vertex.customMode) }),
+          {
           direction: 'top',
           opacity: 0.9,
         });
@@ -400,6 +433,8 @@ export class MapComponent implements OnDestroy {
         pending.navBearing,
         pending.windDir,
         pending.windSpeed,
+        pending.recenter,
+        pending.flightKey,
       );
     }
 
@@ -421,6 +456,8 @@ export class MapComponent implements OnDestroy {
     navBearingDeg: number | null,
     windDirDeg: number | null,
     windSpeedMS: number | null,
+    recenter = false,
+    flightKey: string | null = null,
   ): void {
     if (!this.map) {
       return;
@@ -454,7 +491,8 @@ export class MapComponent implements OnDestroy {
       this.lastPlaneState.yaw === effectiveYaw &&
       this.lastPlaneState.navBearing === effectiveNavBearing &&
       this.lastPlaneState.windDir === effectiveWindDir &&
-      this.lastPlaneState.windSpeed === effectiveWindSpeed
+      this.lastPlaneState.windSpeed === effectiveWindSpeed &&
+      !recenter
     ) {
       return;
     }
@@ -510,6 +548,13 @@ export class MapComponent implements OnDestroy {
       this.applyDisplayLineVisibility();
       if (this.planeMarker.options.opacity === 0) {
         this.planeMarker.setOpacity(1);
+      }
+    }
+
+    if (recenter) {
+      this.map.setView(latLng, Math.max(this.map.getZoom(), 15), { animate: false });
+      if (flightKey) {
+        this.lastRecenterFlightKey = flightKey;
       }
     }
   }
@@ -708,7 +753,9 @@ export class MapComponent implements OnDestroy {
       return;
     }
 
-    const text = `Alt: ${formatAltitudeMeters(altitudeM)}`;
+    const text = this.translate.instant('map.alt', {
+      value: formatAltitudeMeters(altitudeM),
+    });
     const existing = this.homeMarker.getTooltip();
     if (existing) {
       if (existing.getContent() !== text) {
@@ -786,7 +833,9 @@ export class MapComponent implements OnDestroy {
       return;
     }
 
-    const text = `Rel alt: ${formatAltitudeMeters(altitudeM)}`;
+    const text = this.translate.instant('map.relAlt', {
+      value: formatAltitudeMeters(altitudeM),
+    });
     const existing = this.targetMarker.getTooltip();
     if (existing) {
       if (existing.getContent() !== text) {
