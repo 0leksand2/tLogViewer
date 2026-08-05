@@ -8,6 +8,8 @@ namespace tLogViewer.Services.Services;
 /// <summary>
 /// Builds synthetic DERIVED (998) samples once per second (first millisecond):
 /// link quality (MP seq-gap / 3 s window) and seconds since arm.
+/// Empty seconds (no packets) still emit a sample with 0% link quality so blackouts
+/// are accounted for instead of leaving the last good value frozen.
 /// </summary>
 public sealed class DerivedMessageCalculator
 {
@@ -154,12 +156,12 @@ public sealed class DerivedMessageCalculator
             lost += lx;
         }
 
-        if (received + lost == 0)
-        {
-            return;
-        }
-
-        var quality = received / (received + (double)lost) * 100.0;
+        // Silence (no rx and no seq-loss in the window) must still produce a sample.
+        // Skipping left the previous quality frozen via forward-fill and under-counted
+        // blackouts. Treat empty windows as 0% link quality (no data).
+        var quality = received + lost == 0
+            ? 0.0
+            : received / (received + (double)lost) * 100.0;
         if (quality > 100.0)
         {
             quality = 100.0;

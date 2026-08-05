@@ -53,6 +53,17 @@ public static class DerivedFieldsEnricher
             return;
         }
 
+        // Last ms that carries real telemetry (not derived-only / empty). Time-in-air must not
+        // keep growing through trailing no-data buckets through end of log.
+        long? lastTelemetryMs = null;
+        foreach (var ms in byMillisecond.Keys.OrderBy(static key => key))
+        {
+            if (!IsDerivedOnlyOrEmpty(byMillisecond[ms]))
+            {
+                lastTelemetryMs = ms;
+            }
+        }
+
         object? lastLinkQuality = null;
         bool? armed = null;
         long? armedFromMs = null;
@@ -97,7 +108,12 @@ public static class DerivedFieldsEnricher
             double timeSinceArmSec = 0;
             if (armed == true && armedFromMs.HasValue)
             {
-                timeSinceArmSec = Math.Max(0, (ms - armedFromMs.Value) / 1000.0);
+                // Freeze time-in-air on the latest real message when the remainder of the
+                // log is empty / derived-only (no further vehicle telemetry).
+                var effectiveMs = lastTelemetryMs.HasValue && ms > lastTelemetryMs.Value
+                    ? lastTelemetryMs.Value
+                    : ms;
+                timeSinceArmSec = Math.Max(0, (effectiveMs - armedFromMs.Value) / 1000.0);
             }
 
             atMs[TimeSinceArmKey] = timeSinceArmSec;
@@ -419,6 +435,23 @@ public static class DerivedFieldsEnricher
         }
 
         return normalized;
+    }
+
+    /// <summary>
+    /// True when the bucket has no vehicle telemetry — empty or only DERIVED (998_*) fields
+    /// (e.g. silent link-quality samples).
+    /// </summary>
+    private static bool IsDerivedOnlyOrEmpty(Dictionary<string, object> atMs)
+    {
+        foreach (var key in atMs.Keys)
+        {
+            if (!key.StartsWith("998_", StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool IsInvalidCoordinate(double latitudeDeg, double longitudeDeg) =>
