@@ -206,6 +206,52 @@
     "stickLegendGood": "<30% good planned flight",
     "stickLegendImprove": "30–60% room to improve planning",
     "stickLegendUncontrolled": ">60% uncontrolled — train more",
+    "imu": "IMU",
+    "imuNote": "Based on ArduPilot guidance: vibe <30 m/s² OK, 30–60 caution, >60 severe; clip counters ideally 0 (<100 often OK); accel peaks vs ~16 g IMU limit; gyro peak rates.",
+    "imuAccel": "Acceleration (avg |a|)",
+    "imuAccelDetail": "(peak {{peak}} g, |ax|/|ay|/|az| {{x}}/{{y}}/{{z}} g, {{count}} samples)",
+    "imuGyro": "Gyro (avg |ω|)",
+    "imuGyroDetail": "(peak {{peak}} rad/s, |gx|/|gy|/|gz| {{x}}/{{y}}/{{z}}, {{count}} samples)",
+    "imuVibe": "Vibration (avg max axis)",
+    "imuVibeDetail": "(peak {{peak}} m/s², X/Y/Z {{x}}/{{y}}/{{z}}, {{count}} samples)",
+    "imuClip": "Clipping (Δ counters)",
+    "imuClipDetail": "(Clip0/1/2 Δ {{c0}}/{{c1}}/{{c2}}, {{count}} samples)",
+    "imuLegendHealthy": "Vibe <30 m/s² · clip Δ 0 · accel <4 g · gyro <5 rad/s",
+    "imuLegendWarn": "Vibe 30–60 · clip Δ <100 · accel 4–8 g · gyro 5–15 rad/s",
+    "imuLegendBad": "Vibe >60 · clip Δ ≥100 · accel ≥8 g · gyro ≥15 rad/s",
+    "imuHealth": {
+      "unknown": "Unknown",
+      "overall": {
+        "Healthy": "IMU looks healthy",
+        "Warn": "IMU has warnings — review vibration / clipping / rates",
+        "Bad": "IMU issues detected — check vibration isolation / hardware",
+        "Unknown": "IMU data unavailable"
+      },
+      "accel": {
+        "Healthy": "Acceleration peaks within normal flight range",
+        "Warn": "High acceleration peaks — check maneuvers / mounting",
+        "Bad": "Very high acceleration — near IMU saturation risk",
+        "Unknown": "No accelerometer samples"
+      },
+      "gyro": {
+        "Healthy": "Gyro rates within normal flight range",
+        "Warn": "Elevated gyro rates — check aggressive flight / vibration",
+        "Bad": "Extreme gyro rates — verify IMU / airframe integrity",
+        "Unknown": "No gyroscope samples"
+      },
+      "vibe": {
+        "Healthy": "Vibration within ArduPilot acceptable range",
+        "Warn": "Elevated vibration — may affect position / altitude hold",
+        "Bad": "Severe vibration — position / altitude hold problems likely",
+        "Unknown": "No vibration samples"
+      },
+      "clip": {
+        "Healthy": "No accelerometer clipping during flight",
+        "Warn": "Some accelerometer clipping (often hard landings)",
+        "Bad": "Significant clipping — fix mechanical vibration",
+        "Unknown": "No clipping samples"
+      }
+    },
     "empty": "No summary report is available for this flight."
   }
 }

@@ -27,6 +27,18 @@ public static class FlightSummaryService
     private const double StickPwmMaxValid = 2200.0;
     private const double StickUsageGoodMaxPct = 30.0;
     private const double StickUsageImproveMaxPct = 60.0;
+    /// <summary>ArduPilot VIBE: below 30 m/s/s normally acceptable.</summary>
+    private const double VibeHealthyMaxMs2 = 30.0;
+    /// <summary>ArduPilot VIBE: above 60 m/s/s nearly always causes problems.</summary>
+    private const double VibeBadMinMs2 = 60.0;
+    /// <summary>Clip counters: 0 ideal; &lt;100 often OK (e.g. hard landing).</summary>
+    private const long ClipWarnMaxDelta = 100;
+    /// <summary>Peak |a| in g before warning (16 g is typical IMU clip limit).</summary>
+    private const double AccelWarnPeakG = 4.0;
+    private const double AccelBadPeakG = 8.0;
+    /// <summary>Peak gyro magnitude in rad/s.</summary>
+    private const double GyroWarnPeakRadS = 5.0;
+    private const double GyroBadPeakRadS = 15.0;
 
     private static readonly string GpsRawLatKey = FlightFieldIds.GpsRawLat;
     private static readonly string GpsRawLonKey = FlightFieldIds.GpsRawLon;
@@ -48,6 +60,18 @@ public static class FlightSummaryService
     private static readonly string AttitudeYawKey = "30_006";
     private static readonly string GpsCogKey = FlightFieldIds.Groundcourse;
     private static readonly string CustomModeKey = FlightFieldIds.CustomMode;
+    private static readonly string AccelXKey = FlightFieldIds.Ax;
+    private static readonly string AccelYKey = FlightFieldIds.Ay;
+    private static readonly string AccelZKey = FlightFieldIds.Az;
+    private static readonly string GyroXKey = FlightFieldIds.Gx;
+    private static readonly string GyroYKey = FlightFieldIds.Gy;
+    private static readonly string GyroZKey = FlightFieldIds.Gz;
+    private static readonly string VibeXKey = FlightFieldIds.VibeX;
+    private static readonly string VibeYKey = FlightFieldIds.VibeY;
+    private static readonly string VibeZKey = FlightFieldIds.VibeZ;
+    private static readonly string Clip0Key = FlightFieldIds.VibeClip0;
+    private static readonly string Clip1Key = FlightFieldIds.VibeClip1;
+    private static readonly string Clip2Key = FlightFieldIds.VibeClip2;
 
     /// <summary>
     /// Modes where the pilot flies with sticks (not mission / guided autopilot).
@@ -111,6 +135,35 @@ public static class FlightSummaryService
             .ToArray();
         uint? currentFlightMode = null;
 
+        var accelMagSum = 0.0;
+        var accelCount = 0;
+        double accelPeakMag = 0;
+        double accelPeakAbsX = 0;
+        double accelPeakAbsY = 0;
+        double accelPeakAbsZ = 0;
+
+        var gyroMagSum = 0.0;
+        var gyroCount = 0;
+        double gyroPeakMag = 0;
+        double gyroPeakAbsX = 0;
+        double gyroPeakAbsY = 0;
+        double gyroPeakAbsZ = 0;
+
+        var vibeMaxSum = 0.0;
+        var vibeCount = 0;
+        double vibePeak = 0;
+        double vibePeakX = 0;
+        double vibePeakY = 0;
+        double vibePeakZ = 0;
+
+        double? clip0First = null;
+        double? clip0Last = null;
+        double? clip1First = null;
+        double? clip1Last = null;
+        double? clip2First = null;
+        double? clip2Last = null;
+        var clipCount = 0;
+
         foreach (var ms in byMillisecond.Keys.OrderBy(static key => key))
         {
             var atMs = byMillisecond[ms];
@@ -161,6 +214,60 @@ public static class FlightSummaryService
                         stick.Add(pwm);
                     }
                 }
+            }
+
+            if (TryReadAccelG(atMs, out var ax, out var ay, out var az))
+            {
+                var mag = Math.Sqrt(ax * ax + ay * ay + az * az);
+                accelCount++;
+                accelMagSum += mag;
+                accelPeakMag = Math.Max(accelPeakMag, mag);
+                accelPeakAbsX = Math.Max(accelPeakAbsX, Math.Abs(ax));
+                accelPeakAbsY = Math.Max(accelPeakAbsY, Math.Abs(ay));
+                accelPeakAbsZ = Math.Max(accelPeakAbsZ, Math.Abs(az));
+            }
+
+            if (TryReadGyroRadS(atMs, out var gx, out var gy, out var gz))
+            {
+                var mag = Math.Sqrt(gx * gx + gy * gy + gz * gz);
+                gyroCount++;
+                gyroMagSum += mag;
+                gyroPeakMag = Math.Max(gyroPeakMag, mag);
+                gyroPeakAbsX = Math.Max(gyroPeakAbsX, Math.Abs(gx));
+                gyroPeakAbsY = Math.Max(gyroPeakAbsY, Math.Abs(gy));
+                gyroPeakAbsZ = Math.Max(gyroPeakAbsZ, Math.Abs(gz));
+            }
+
+            if (TryAsDouble(atMs, VibeXKey, out var vx)
+                && TryAsDouble(atMs, VibeYKey, out var vy)
+                && TryAsDouble(atMs, VibeZKey, out var vz)
+                && IsFiniteNonNegative(vx)
+                && IsFiniteNonNegative(vy)
+                && IsFiniteNonNegative(vz))
+            {
+                var sampleMax = Math.Max(vx, Math.Max(vy, vz));
+                vibeCount++;
+                vibeMaxSum += sampleMax;
+                vibePeak = Math.Max(vibePeak, sampleMax);
+                vibePeakX = Math.Max(vibePeakX, vx);
+                vibePeakY = Math.Max(vibePeakY, vy);
+                vibePeakZ = Math.Max(vibePeakZ, vz);
+            }
+
+            if (TryAsDouble(atMs, Clip0Key, out var c0)
+                && TryAsDouble(atMs, Clip1Key, out var c1)
+                && TryAsDouble(atMs, Clip2Key, out var c2)
+                && c0 >= 0
+                && c1 >= 0
+                && c2 >= 0)
+            {
+                clipCount++;
+                clip0First ??= c0;
+                clip1First ??= c1;
+                clip2First ??= c2;
+                clip0Last = c0;
+                clip1Last = c1;
+                clip2Last = c2;
             }
 
             if (TryReadPlaneCoordinate(atMs, out var lat, out var lon))
@@ -252,6 +359,32 @@ public static class FlightSummaryService
         double? yawErrorAvg = yawErrorSamples.Count > 0 ? yawErrorSamples.Average() : null;
         double? yawCogDiffAvg = yawCogDiffSamples.Count > 0 ? yawCogDiffSamples.Average() : null;
         var (yawCogHealth, yawCogLabel) = ClassifyYawCog(yawCogDiffAvg, yawCogDiffSamples.Count);
+        var imu = BuildImuSummary(
+            accelCount,
+            accelMagSum,
+            accelPeakMag,
+            accelPeakAbsX,
+            accelPeakAbsY,
+            accelPeakAbsZ,
+            gyroCount,
+            gyroMagSum,
+            gyroPeakMag,
+            gyroPeakAbsX,
+            gyroPeakAbsY,
+            gyroPeakAbsZ,
+            vibeCount,
+            vibeMaxSum,
+            vibePeak,
+            vibePeakX,
+            vibePeakY,
+            vibePeakZ,
+            clipCount,
+            clip0First,
+            clip0Last,
+            clip1First,
+            clip1Last,
+            clip2First,
+            clip2Last);
 
         return new FlightSummaryReport
         {
@@ -276,8 +409,286 @@ public static class FlightSummaryService
             YawCogDiffAverageDeg = yawCogDiffAvg,
             YawCogSampleCount = yawCogDiffSamples.Count,
             StickChannels = stickAccumulators.Select(static s => s.ToReport()).ToArray(),
+            Imu = imu,
         };
     }
+
+    private static FlightImuSummary BuildImuSummary(
+        int accelCount,
+        double accelMagSum,
+        double accelPeakMag,
+        double accelPeakAbsX,
+        double accelPeakAbsY,
+        double accelPeakAbsZ,
+        int gyroCount,
+        double gyroMagSum,
+        double gyroPeakMag,
+        double gyroPeakAbsX,
+        double gyroPeakAbsY,
+        double gyroPeakAbsZ,
+        int vibeCount,
+        double vibeMaxSum,
+        double vibePeak,
+        double vibePeakX,
+        double vibePeakY,
+        double vibePeakZ,
+        int clipCount,
+        double? clip0First,
+        double? clip0Last,
+        double? clip1First,
+        double? clip1Last,
+        double? clip2First,
+        double? clip2Last)
+    {
+        double? accelAvg = accelCount > 0 ? Round1(accelMagSum / accelCount) : null;
+        double? accelPeak = accelCount > 0 ? Round1(accelPeakMag) : null;
+        var (accelHealth, accelLabel) = ClassifyAccel(accelPeak, accelCount);
+
+        double? gyroAvg = gyroCount > 0 ? Round2(gyroMagSum / gyroCount) : null;
+        double? gyroPeak = gyroCount > 0 ? Round2(gyroPeakMag) : null;
+        var (gyroHealth, gyroLabel) = ClassifyGyro(gyroPeak, gyroCount);
+
+        double? vibeAvg = vibeCount > 0 ? Round1(vibeMaxSum / vibeCount) : null;
+        double? vibePeakR = vibeCount > 0 ? Round1(vibePeak) : null;
+        var (vibeHealth, vibeLabel) = ClassifyVibration(vibePeakR, vibeAvg, vibeCount);
+
+        var clip0 = ClipDelta(clip0First, clip0Last);
+        var clip1 = ClipDelta(clip1First, clip1Last);
+        var clip2 = ClipDelta(clip2First, clip2Last);
+        var clipTotal = clip0 + clip1 + clip2;
+        var (clipHealth, clipLabel) = ClassifyClipping(clipTotal, clipCount);
+
+        var (overall, overallLabel) = WorstImuHealth(
+            (accelHealth, accelLabel),
+            (gyroHealth, gyroLabel),
+            (vibeHealth, vibeLabel),
+            (clipHealth, clipLabel));
+
+        return new FlightImuSummary
+        {
+            OverallHealth = overall,
+            OverallHealthLabel = overallLabel,
+            AccelAvgMagnitudeG = accelAvg,
+            AccelPeakMagnitudeG = accelPeak,
+            AccelPeakAbsXG = accelCount > 0 ? Round1(accelPeakAbsX) : null,
+            AccelPeakAbsYG = accelCount > 0 ? Round1(accelPeakAbsY) : null,
+            AccelPeakAbsZG = accelCount > 0 ? Round1(accelPeakAbsZ) : null,
+            AccelSampleCount = accelCount,
+            AccelHealth = accelHealth,
+            AccelHealthLabel = accelLabel,
+            GyroAvgMagnitudeRadS = gyroAvg,
+            GyroPeakMagnitudeRadS = gyroPeak,
+            GyroPeakAbsXRadS = gyroCount > 0 ? Round2(gyroPeakAbsX) : null,
+            GyroPeakAbsYRadS = gyroCount > 0 ? Round2(gyroPeakAbsY) : null,
+            GyroPeakAbsZRadS = gyroCount > 0 ? Round2(gyroPeakAbsZ) : null,
+            GyroSampleCount = gyroCount,
+            GyroHealth = gyroHealth,
+            GyroHealthLabel = gyroLabel,
+            VibeAvgMaxMs2 = vibeAvg,
+            VibePeakMs2 = vibePeakR,
+            VibePeakXMs2 = vibeCount > 0 ? Round1(vibePeakX) : null,
+            VibePeakYMs2 = vibeCount > 0 ? Round1(vibePeakY) : null,
+            VibePeakZMs2 = vibeCount > 0 ? Round1(vibePeakZ) : null,
+            VibeSampleCount = vibeCount,
+            VibeHealth = vibeHealth,
+            VibeHealthLabel = vibeLabel,
+            Clip0Delta = clip0,
+            Clip1Delta = clip1,
+            Clip2Delta = clip2,
+            ClipTotalDelta = clipTotal,
+            ClipSampleCount = clipCount,
+            ClipHealth = clipHealth,
+            ClipHealthLabel = clipLabel,
+        };
+    }
+
+    private static long ClipDelta(double? first, double? last)
+    {
+        if (first is not { } f || last is not { } l)
+        {
+            return 0;
+        }
+
+        var delta = l - f;
+        return delta > 0 ? (long)Math.Round(delta) : 0;
+    }
+
+    /// <summary>
+    /// ArduPilot VIBE guidance: &lt;30 m/s/s OK; 30–60 may have problems; &gt;60 nearly always bad.
+    /// </summary>
+    public static (string Health, string Label) ClassifyVibration(
+        double? peakMs2,
+        double? avgMaxMs2,
+        int sampleCount)
+    {
+        if (sampleCount <= 0 || peakMs2 is not { } peak || !double.IsFinite(peak))
+        {
+            return ("Unknown", "No vibration samples");
+        }
+
+        var score = Math.Max(peak, avgMaxMs2 ?? 0);
+        if (score < VibeHealthyMaxMs2)
+        {
+            return ("Healthy", "Vibration within ArduPilot acceptable range");
+        }
+
+        if (score < VibeBadMinMs2)
+        {
+            return ("Warn", "Elevated vibration — may affect position / altitude hold");
+        }
+
+        return ("Bad", "Severe vibration — position / altitude hold problems likely");
+    }
+
+    /// <summary>
+    /// Clip counters should stay near 0; &lt;100 often OK; steadily rising / large delta is serious.
+    /// </summary>
+    public static (string Health, string Label) ClassifyClipping(long totalDelta, int sampleCount)
+    {
+        if (sampleCount <= 0)
+        {
+            return ("Unknown", "No clipping samples");
+        }
+
+        if (totalDelta <= 0)
+        {
+            return ("Healthy", "No accelerometer clipping during flight");
+        }
+
+        if (totalDelta < ClipWarnMaxDelta)
+        {
+            return ("Warn", "Some accelerometer clipping (often hard landings)");
+        }
+
+        return ("Bad", "Significant accelerometer clipping — fix mechanical vibration");
+    }
+
+    /// <summary>Peak accel magnitude vs typical 16 g IMU limit.</summary>
+    public static (string Health, string Label) ClassifyAccel(double? peakMagnitudeG, int sampleCount)
+    {
+        if (sampleCount <= 0 || peakMagnitudeG is not { } peak || !double.IsFinite(peak))
+        {
+            return ("Unknown", "No accelerometer samples");
+        }
+
+        if (peak < AccelWarnPeakG)
+        {
+            return ("Healthy", "Acceleration peaks within normal flight range");
+        }
+
+        if (peak < AccelBadPeakG)
+        {
+            return ("Warn", "High acceleration peaks — check maneuvers / mounting");
+        }
+
+        return ("Bad", "Very high acceleration — near IMU saturation risk");
+    }
+
+    /// <summary>Peak gyro magnitude bands for unusual rates / noise.</summary>
+    public static (string Health, string Label) ClassifyGyro(double? peakMagnitudeRadS, int sampleCount)
+    {
+        if (sampleCount <= 0 || peakMagnitudeRadS is not { } peak || !double.IsFinite(peak))
+        {
+            return ("Unknown", "No gyroscope samples");
+        }
+
+        if (peak < GyroWarnPeakRadS)
+        {
+            return ("Healthy", "Gyro rates within normal flight range");
+        }
+
+        if (peak < GyroBadPeakRadS)
+        {
+            return ("Warn", "Elevated gyro rates — check aggressive flight / vibration");
+        }
+
+        return ("Bad", "Extreme gyro rates — verify IMU / airframe integrity");
+    }
+
+    private static (string Health, string Label) WorstImuHealth(
+        params (string Health, string Label)[] parts)
+    {
+        static int Rank(string health) => health switch
+        {
+            "Bad" => 3,
+            "Warn" => 2,
+            "Healthy" => 1,
+            _ => 0,
+        };
+
+        var worst = parts.OrderByDescending(static p => Rank(p.Health)).First();
+        if (worst.Health is "Unknown" && parts.Any(static p => p.Health is not "Unknown"))
+        {
+            worst = parts.Where(static p => p.Health is not "Unknown")
+                .OrderByDescending(static p => Rank(p.Health))
+                .First();
+        }
+
+        return worst.Health switch
+        {
+            "Healthy" => ("Healthy", "IMU looks healthy"),
+            "Warn" => ("Warn", "IMU has warnings — review vibration / clipping / rates"),
+            "Bad" => ("Bad", "IMU issues detected — vibration isolation or hardware check needed"),
+            _ => ("Unknown", "IMU data unavailable"),
+        };
+    }
+
+    private static bool TryReadAccelG(
+        IReadOnlyDictionary<string, object> atMs,
+        out double ax,
+        out double ay,
+        out double az)
+    {
+        ax = ay = az = 0;
+        if (!TryAsDouble(atMs, AccelXKey, out ax)
+            || !TryAsDouble(atMs, AccelYKey, out ay)
+            || !TryAsDouble(atMs, AccelZKey, out az))
+        {
+            return false;
+        }
+
+        // SCALED_IMU stores g; RAW_IMU often stores mG (~1000 at 1 g).
+        if (Math.Abs(ax) > 50 || Math.Abs(ay) > 50 || Math.Abs(az) > 50)
+        {
+            ax /= 1000.0;
+            ay /= 1000.0;
+            az /= 1000.0;
+        }
+
+        return double.IsFinite(ax) && double.IsFinite(ay) && double.IsFinite(az);
+    }
+
+    private static bool TryReadGyroRadS(
+        IReadOnlyDictionary<string, object> atMs,
+        out double gx,
+        out double gy,
+        out double gz)
+    {
+        gx = gy = gz = 0;
+        if (!TryAsDouble(atMs, GyroXKey, out gx)
+            || !TryAsDouble(atMs, GyroYKey, out gy)
+            || !TryAsDouble(atMs, GyroZKey, out gz))
+        {
+            return false;
+        }
+
+        // SCALED_IMU stores rad/s; RAW_IMU often stores mrad/s.
+        if (Math.Abs(gx) > 50 || Math.Abs(gy) > 50 || Math.Abs(gz) > 50)
+        {
+            gx /= 1000.0;
+            gy /= 1000.0;
+            gz /= 1000.0;
+        }
+
+        return double.IsFinite(gx) && double.IsFinite(gy) && double.IsFinite(gz);
+    }
+
+    private static bool IsFiniteNonNegative(double value) =>
+        double.IsFinite(value) && value >= 0;
+
+    private static double Round1(double value) => Math.Round(value, 1);
+
+    private static double Round2(double value) => Math.Round(value, 2);
 
     private static bool IsValidStickPwm(double pwm) =>
         double.IsFinite(pwm) && pwm >= StickPwmMinValid && pwm <= StickPwmMaxValid;

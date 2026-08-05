@@ -118,6 +118,158 @@
     </section>
 
     <section class="flight-summary__section">
+      <h3 class="flight-summary__heading">{{ 'summary.imu' | translate }}</h3>
+      <p class="flight-summary__status">
+        {{ 'summary.imuNote' | translate }}
+      </p>
+
+      @if (summary.imu; as imu) {
+        <p
+          class="flight-summary__status"
+          [class]="'flight-summary__stick flight-summary__stick--' + imuTone(imu.overallHealth)"
+        >
+          {{ imuHealthLabel('overall', imu.overallHealth) }}
+        </p>
+
+        <dl class="flight-summary__grid">
+          <dt>{{ 'summary.imuAccel' | translate }}</dt>
+          <dd>
+            @if (imu.accelSampleCount > 0) {
+              <span [class]="'flight-summary__stick flight-summary__stick--' + imuTone(imu.accelHealth)">
+                {{ imu.accelAvgMagnitudeG | number: '1.1-1' }} g
+              </span>
+              <span
+                class="flight-summary__stick-label"
+                [class]="'flight-summary__stick flight-summary__stick--' + imuTone(imu.accelHealth)"
+              >
+                {{ imuHealthLabel('accel', imu.accelHealth) }}
+              </span>
+              <span class="flight-summary__muted">
+                {{
+                  'summary.imuAccelDetail'
+                    | translate
+                      : {
+                          peak: (imu.accelPeakMagnitudeG | number: '1.1-1'),
+                          x: (imu.accelPeakAbsXG | number: '1.1-1'),
+                          y: (imu.accelPeakAbsYG | number: '1.1-1'),
+                          z: (imu.accelPeakAbsZG | number: '1.1-1'),
+                          count: imu.accelSampleCount,
+                        }
+                }}
+              </span>
+            } @else {
+              {{ 'common.emDash' | translate }}
+            }
+          </dd>
+
+          <dt>{{ 'summary.imuGyro' | translate }}</dt>
+          <dd>
+            @if (imu.gyroSampleCount > 0) {
+              <span [class]="'flight-summary__stick flight-summary__stick--' + imuTone(imu.gyroHealth)">
+                {{ imu.gyroAvgMagnitudeRadS | number: '1.2-2' }} rad/s
+              </span>
+              <span
+                class="flight-summary__stick-label"
+                [class]="'flight-summary__stick flight-summary__stick--' + imuTone(imu.gyroHealth)"
+              >
+                {{ imuHealthLabel('gyro', imu.gyroHealth) }}
+              </span>
+              <span class="flight-summary__muted">
+                {{
+                  'summary.imuGyroDetail'
+                    | translate
+                      : {
+                          peak: (imu.gyroPeakMagnitudeRadS | number: '1.2-2'),
+                          x: (imu.gyroPeakAbsXRadS | number: '1.2-2'),
+                          y: (imu.gyroPeakAbsYRadS | number: '1.2-2'),
+                          z: (imu.gyroPeakAbsZRadS | number: '1.2-2'),
+                          count: imu.gyroSampleCount,
+                        }
+                }}
+              </span>
+            } @else {
+              {{ 'common.emDash' | translate }}
+            }
+          </dd>
+
+          <dt>{{ 'summary.imuVibe' | translate }}</dt>
+          <dd>
+            @if (imu.vibeSampleCount > 0) {
+              <span [class]="'flight-summary__stick flight-summary__stick--' + imuTone(imu.vibeHealth)">
+                {{ imu.vibeAvgMaxMs2 | number: '1.1-1' }} m/s²
+              </span>
+              <span
+                class="flight-summary__stick-label"
+                [class]="'flight-summary__stick flight-summary__stick--' + imuTone(imu.vibeHealth)"
+              >
+                {{ imuHealthLabel('vibe', imu.vibeHealth) }}
+              </span>
+              <span class="flight-summary__muted">
+                {{
+                  'summary.imuVibeDetail'
+                    | translate
+                      : {
+                          peak: (imu.vibePeakMs2 | number: '1.1-1'),
+                          x: (imu.vibePeakXMs2 | number: '1.1-1'),
+                          y: (imu.vibePeakYMs2 | number: '1.1-1'),
+                          z: (imu.vibePeakZMs2 | number: '1.1-1'),
+                          count: imu.vibeSampleCount,
+                        }
+                }}
+              </span>
+            } @else {
+              {{ 'common.emDash' | translate }}
+            }
+          </dd>
+
+          <dt>{{ 'summary.imuClip' | translate }}</dt>
+          <dd>
+            @if (imu.clipSampleCount > 0) {
+              <span [class]="'flight-summary__stick flight-summary__stick--' + imuTone(imu.clipHealth)">
+                {{ imu.clipTotalDelta }}
+              </span>
+              <span
+                class="flight-summary__stick-label"
+                [class]="'flight-summary__stick flight-summary__stick--' + imuTone(imu.clipHealth)"
+              >
+                {{ imuHealthLabel('clip', imu.clipHealth) }}
+              </span>
+              <span class="flight-summary__muted">
+                {{
+                  'summary.imuClipDetail'
+                    | translate
+                      : {
+                          c0: imu.clip0Delta,
+                          c1: imu.clip1Delta,
+                          c2: imu.clip2Delta,
+                          count: imu.clipSampleCount,
+                        }
+                }}
+              </span>
+            } @else {
+              {{ 'common.emDash' | translate }}
+            }
+          </dd>
+        </dl>
+
+        <ul class="flight-summary__legend">
+          <li>
+            <span class="flight-summary__swatch flight-summary__swatch--healthy"></span>
+            {{ 'summary.imuLegendHealthy' | translate }}
+          </li>
+          <li>
+            <span class="flight-summary__swatch flight-summary__swatch--warn"></span>
+            {{ 'summary.imuLegendWarn' | translate }}
+          </li>
+          <li>
+            <span class="flight-summary__swatch flight-summary__swatch--bad"></span>
+            {{ 'summary.imuLegendBad' | translate }}
+          </li>
+        </ul>
+      }
+    </section>
+
+    <section class="flight-summary__section">
       <h3 class="flight-summary__heading">{{ 'summary.spoof' | translate }}</h3>
       <p class="flight-summary__status">
         {{ 'summary.spoofThreshold' | translate: { distance: '5 km' } }}

@@ -61,6 +61,43 @@ export interface FlightMagRadiationEvent {
   longitudeDeg: number | null;
 }
 
+export interface FlightImuSummary {
+  /** Healthy | Warn | Bad | Unknown */
+  overallHealth: string;
+  overallHealthLabel: string;
+  accelAvgMagnitudeG: number | null;
+  accelPeakMagnitudeG: number | null;
+  accelPeakAbsXG: number | null;
+  accelPeakAbsYG: number | null;
+  accelPeakAbsZG: number | null;
+  accelSampleCount: number;
+  accelHealth: string;
+  accelHealthLabel: string;
+  gyroAvgMagnitudeRadS: number | null;
+  gyroPeakMagnitudeRadS: number | null;
+  gyroPeakAbsXRadS: number | null;
+  gyroPeakAbsYRadS: number | null;
+  gyroPeakAbsZRadS: number | null;
+  gyroSampleCount: number;
+  gyroHealth: string;
+  gyroHealthLabel: string;
+  vibeAvgMaxMs2: number | null;
+  vibePeakMs2: number | null;
+  vibePeakXMs2: number | null;
+  vibePeakYMs2: number | null;
+  vibePeakZMs2: number | null;
+  vibeSampleCount: number;
+  vibeHealth: string;
+  vibeHealthLabel: string;
+  clip0Delta: number;
+  clip1Delta: number;
+  clip2Delta: number;
+  clipTotalDelta: number;
+  clipSampleCount: number;
+  clipHealth: string;
+  clipHealthLabel: string;
+}
+
 export interface FlightStickChannelUsage {
   channel: number;
   /** Roll | Pitch | Throttle | Yaw */
@@ -103,6 +140,8 @@ export interface FlightSummaryReport {
   yawCogSampleCount: number;
   /** RC stick channels 1–4 usage vs center PWM 1500. */
   stickChannels: FlightStickChannelUsage[];
+  /** IMU accel / gyro / vibration / clipping analysis. */
+  imu: FlightImuSummary;
 }
 
 export interface Flight extends FlightSummary {

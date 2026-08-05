@@ -117,6 +117,34 @@ export class FlightSummaryReportComponent extends ModalContentBase<null> {
     }
   }
 
+  protected imuTone(health: string | null | undefined): HdopHealthTone {
+    switch (health) {
+      case 'Healthy':
+      case 'Good':
+        return 'healthy';
+      case 'Warn':
+      case 'Improve':
+        return 'warn';
+      case 'Bad':
+      case 'Uncontrolled':
+        return 'bad';
+      default:
+        return 'unknown';
+    }
+  }
+
+  protected imuHealthLabel(
+    kind: 'overall' | 'accel' | 'gyro' | 'vibe' | 'clip',
+    health: string | null | undefined,
+  ): string {
+    this.language.lang();
+    const key = `summary.imuHealth.${kind}.${health ?? 'Unknown'}`;
+    const translated = this.translate.instant(key);
+    return translated === key
+      ? this.translate.instant('summary.imuHealth.unknown')
+      : translated;
+  }
+
   protected hdopHealthLabel(health: string | null | undefined): string {
     this.language.lang();
     switch (health) {

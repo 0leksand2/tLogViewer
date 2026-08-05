@@ -61,6 +61,57 @@ public sealed class FlightSummaryReport
     /// Always length 4; <see cref="FlightStickChannelUsage.SampleCount"/> is 0 when no data.
     /// </summary>
     public required IReadOnlyList<FlightStickChannelUsage> StickChannels { get; init; }
+
+    /// <summary>IMU acceleration / gyro / vibration / clipping analysis (ArduPilot VIBE guidance).</summary>
+    public required FlightImuSummary Imu { get; init; }
+}
+
+/// <summary>IMU health summary for one flight.</summary>
+public sealed class FlightImuSummary
+{
+    /// <summary>Worst of accel / gyro / vibration / clipping: Healthy, Warn, Bad, or Unknown.</summary>
+    public required string OverallHealth { get; init; }
+
+    public required string OverallHealthLabel { get; init; }
+
+    public double? AccelAvgMagnitudeG { get; init; }
+    public double? AccelPeakMagnitudeG { get; init; }
+    public double? AccelPeakAbsXG { get; init; }
+    public double? AccelPeakAbsYG { get; init; }
+    public double? AccelPeakAbsZG { get; init; }
+    public int AccelSampleCount { get; init; }
+    public required string AccelHealth { get; init; }
+    public required string AccelHealthLabel { get; init; }
+
+    public double? GyroAvgMagnitudeRadS { get; init; }
+    public double? GyroPeakMagnitudeRadS { get; init; }
+    public double? GyroPeakAbsXRadS { get; init; }
+    public double? GyroPeakAbsYRadS { get; init; }
+    public double? GyroPeakAbsZRadS { get; init; }
+    public int GyroSampleCount { get; init; }
+    public required string GyroHealth { get; init; }
+    public required string GyroHealthLabel { get; init; }
+
+    /// <summary>Average of per-sample max(VibeX, VibeY, VibeZ) in m/s/s.</summary>
+    public double? VibeAvgMaxMs2 { get; init; }
+
+    /// <summary>Peak of any vibe axis in m/s/s.</summary>
+    public double? VibePeakMs2 { get; init; }
+
+    public double? VibePeakXMs2 { get; init; }
+    public double? VibePeakYMs2 { get; init; }
+    public double? VibePeakZMs2 { get; init; }
+    public int VibeSampleCount { get; init; }
+    public required string VibeHealth { get; init; }
+    public required string VibeHealthLabel { get; init; }
+
+    public long Clip0Delta { get; init; }
+    public long Clip1Delta { get; init; }
+    public long Clip2Delta { get; init; }
+    public long ClipTotalDelta { get; init; }
+    public int ClipSampleCount { get; init; }
+    public required string ClipHealth { get; init; }
+    public required string ClipHealthLabel { get; init; }
 }
 
 /// <summary>Stick travel usage for one RC input channel relative to PWM center 1500.</summary>
