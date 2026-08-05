@@ -56,7 +56,12 @@ export class FlightPlayerComponent implements OnDestroy {
   private readonly language = inject(LanguageService);
   private readonly translate = inject(TranslateService);
   private rafId: number | null = null;
-  private lastFrameMs: number | null = null;
+  /**
+   * Absolute realtime anchor: wall clock `anchorWallMs` corresponds to log time
+   * `anchorLogMs`. Avoids drift from integrating per-frame deltas under load.
+   */
+  private anchorWallMs: number | null = null;
+  private anchorLogMs: number | null = null;
 
   protected readonly hasPlayback = computed(() => this.playbackPoints().length > 0);
 
@@ -120,19 +125,6 @@ export class FlightPlayerComponent implements OnDestroy {
       .filter((marker) => Number.isFinite(marker.percent));
   });
 
-  /** Log timeline length in milliseconds (first→last message key, or duration). */
-  private readonly timelineSpanMs = computed(() => {
-    const points = this.playbackPoints();
-    if (points.length >= 2) {
-      return Math.max(1, points[points.length - 1]! - points[0]!);
-    }
-    const duration = this.durationSeconds();
-    if (duration > 0) {
-      return Math.max(1, Math.round(duration * 1000));
-    }
-    return 1;
-  });
-
   constructor() {
     effect(() => {
       if (!this.hasPlayback()) {
@@ -176,6 +168,7 @@ export class FlightPlayerComponent implements OnDestroy {
 
     const next = snapProgressPercent(this.progressPercent() + FORWARD_PERCENT);
     this.progressPercent.set(next);
+    this.invalidatePlaybackAnchor();
     if (next >= 100) {
       this.playing.set(false);
     }
@@ -194,6 +187,7 @@ export class FlightPlayerComponent implements OnDestroy {
     }
 
     this.progressPercent.set(snapProgressPercent(value));
+    this.invalidatePlaybackAnchor();
   }
 
   /** Jump to 5 seconds before the mode-change timecode (clamped to flight start). */
@@ -218,6 +212,7 @@ export class FlightPlayerComponent implements OnDestroy {
     const targetMs = Math.max(first, changedAtMs - beforeMs);
     const percent = ((targetMs - first) / span) * 100;
     this.progressPercent.set(snapProgressPercent(percent));
+    this.invalidatePlaybackAnchor();
   }
 
   protected onSpeedChange(value: string | null): void {
@@ -229,6 +224,7 @@ export class FlightPlayerComponent implements OnDestroy {
       return;
     }
     this.playbackSpeed.set(parsed);
+    this.invalidatePlaybackAnchor();
   }
 
   private startPlayback(): void {
@@ -236,37 +232,46 @@ export class FlightPlayerComponent implements OnDestroy {
       return;
     }
 
-    this.lastFrameMs = null;
+    this.invalidatePlaybackAnchor();
 
     const tick = (now: number) => {
       if (!this.playing()) {
         this.rafId = null;
-        this.lastFrameMs = null;
+        this.invalidatePlaybackAnchor();
         return;
       }
 
-      if (this.lastFrameMs === null) {
-        this.lastFrameMs = now;
+      const points = this.playbackPoints();
+      if (points.length === 0) {
+        this.playing.set(false);
+        this.rafId = null;
+        this.invalidatePlaybackAnchor();
+        return;
       }
 
-      const deltaWallMs = now - this.lastFrameMs;
-      this.lastFrameMs = now;
+      const first = points[0]!;
+      const last = points.length >= 2 ? points[points.length - 1]! : first;
+      const span = Math.max(1, last - first);
 
-      // At 100% speed: 1 ms of wall time advances 1 ms of log timeline.
+      if (this.anchorWallMs === null || this.anchorLogMs === null) {
+        this.anchorWallMs = now;
+        this.anchorLogMs = first + (span * this.progressPercent()) / 100;
+      }
+
+      // 100% ⇒ 1 ms wall-clock = 1 ms of log time (absolute clock, not summed deltas).
       const speedFactor = this.playbackSpeed() / 100;
-      const deltaFlightMs = deltaWallMs * speedFactor;
-      const deltaPercent = (deltaFlightMs / this.timelineSpanMs()) * 100;
-      const next = this.progressPercent() + deltaPercent;
+      const logMs = this.anchorLogMs + (now - this.anchorWallMs) * speedFactor;
 
-      if (next >= 100) {
+      if (logMs >= last) {
         this.progressPercent.set(100);
         this.playing.set(false);
         this.rafId = null;
-        this.lastFrameMs = null;
+        this.invalidatePlaybackAnchor();
         return;
       }
 
-      this.progressPercent.set(next);
+      const percent = ((Math.max(first, logMs) - first) / span) * 100;
+      this.progressPercent.set(percent);
       this.rafId = requestAnimationFrame(tick);
     };
 
@@ -278,7 +283,13 @@ export class FlightPlayerComponent implements OnDestroy {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
     }
-    this.lastFrameMs = null;
+    this.invalidatePlaybackAnchor();
+  }
+
+  /** Force the next tick to re-sync wall clock to the current log position. */
+  private invalidatePlaybackAnchor(): void {
+    this.anchorWallMs = null;
+    this.anchorLogMs = null;
   }
 
   private formatPercent(value: number): string {

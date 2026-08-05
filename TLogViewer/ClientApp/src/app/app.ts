@@ -77,6 +77,11 @@ export class App {
   private readonly translate = inject(TranslateService);
   private readonly flightSelection$ = new Subject<{ sessionId: string; flightId: string } | null>();
   private lastTrailBuildKey = '';
+  /** Skip redundant UI drives when the resolved playback millisecond is unchanged. */
+  private lastDrivenPlaybackMs: number | null = null;
+  private lastDrivenFlightId: string | null = null;
+  private lastPlaneDriveKey = '';
+  private lastHomeDriveKey = '';
 
   protected readonly menuOpen = signal(true);
   protected readonly propertiesModalOpen = signal(false);
@@ -144,6 +149,19 @@ export class App {
       const flight = this.loadedFlight();
       const points = this.playbackPoints();
       const millisecond = resolvePlaybackPoint(points, this.flightProgressPercent());
+      const flightId = flight?.id ?? null;
+
+      // Progress updates every animation frame; only push telemetry when the
+      // displayed log millisecond actually changes (keeps 100% pacing realtime).
+      if (
+        millisecond === this.lastDrivenPlaybackMs &&
+        flightId === this.lastDrivenFlightId
+      ) {
+        return;
+      }
+      this.lastDrivenPlaybackMs = millisecond;
+      this.lastDrivenFlightId = flightId;
+
       const rawValues =
         millisecond !== null && flight ? (flight.messages[String(millisecond)] ?? {}) : {};
       const values = ensureDerivedPlaybackValues(
@@ -152,7 +170,7 @@ export class App {
         millisecond,
         rawValues,
       );
-      this.currentValue.set(millisecond, values, flight?.id ?? null);
+      this.currentValue.set(millisecond, values, flightId);
     });
 
     effect(() => {
@@ -161,13 +179,20 @@ export class App {
         this.playbackPoints(),
         this.flightProgressPercent(),
       );
-      const homePoints = resolveFlightHomePoints(flight?.homePoints, flight?.messages);
-      const home = resolveActiveHomePoint(homePoints, playbackMs);
       const map = this.map();
+      const homeKey = `${flight?.id ?? ''}|${playbackMs}`;
 
       if (!map) {
         return;
       }
+
+      if (homeKey === this.lastHomeDriveKey) {
+        return;
+      }
+      this.lastHomeDriveKey = homeKey;
+
+      const homePoints = resolveFlightHomePoints(flight?.homePoints, flight?.messages);
+      const home = resolveActiveHomePoint(homePoints, playbackMs);
 
       if (!home) {
         map.setHomeLocation(null, null);
@@ -196,15 +221,30 @@ export class App {
       const trailLengthSeconds = this.mapDisplaySettings.trailLengthSeconds();
       const gpsSource = this.mapDisplaySettings.gpsSource();
       const points = this.playbackPoints();
-      const plane = resolvePlanePosition(flight?.messages, playbackMs, gpsSource, points);
-      const target = resolvePositionTarget(flight?.messages, playbackMs);
-      const homePoints = resolveFlightHomePoints(flight?.homePoints, flight?.messages);
-      const home = resolveActiveHomePoint(homePoints, playbackMs);
       const map = this.map();
+
+      const planeKey = [
+        flight?.id ?? '',
+        playbackMs,
+        showTrail,
+        fullTrail,
+        trailLengthSeconds,
+        gpsSource,
+      ].join('|');
 
       if (!map) {
         return;
       }
+
+      if (planeKey === this.lastPlaneDriveKey) {
+        return;
+      }
+      this.lastPlaneDriveKey = planeKey;
+
+      const plane = resolvePlanePosition(flight?.messages, playbackMs, gpsSource, points);
+      const target = resolvePositionTarget(flight?.messages, playbackMs);
+      const homePoints = resolveFlightHomePoints(flight?.homePoints, flight?.messages);
+      const home = resolveActiveHomePoint(homePoints, playbackMs);
 
       if (!plane) {
         map.setPlaneLocation(null, null);
@@ -270,6 +310,10 @@ export class App {
       const flightId = this.selectedFlightId();
       this.flightProgressPercent.set(0);
       this.flightPlaying.set(false);
+      this.lastDrivenPlaybackMs = null;
+      this.lastDrivenFlightId = null;
+      this.lastPlaneDriveKey = '';
+      this.lastHomeDriveKey = '';
 
       if (!sessionId || !flightId) {
         this.loadedFlight.set(null);
