@@ -104,4 +104,13 @@
       }
     </select>
   </label>
+
+  <label class="map-settings__option">
+    <input
+      type="checkbox"
+      [checked]="draftSticks()"
+      (change)="onDisplaySticksChange($any($event.target).checked)"
+    />
+    <span>{{ 'settings.displaySticks' | translate }}</span>
+  </label>
 </div>

@@ -26,6 +26,7 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
   readonly displayTargetPath = input(true);
   readonly displayWind = input(true);
   readonly displayTrail = input(true);
+  readonly displaySticks = input(true);
   readonly displayFullTrail = input(false);
   readonly trailLengthSeconds = input(60);
   readonly gpsSource = input<MapGpsSource>(DEFAULT_GPS_SOURCE);
@@ -39,6 +40,7 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
   protected readonly draftTargetPath = signal(true);
   protected readonly draftWind = signal(true);
   protected readonly draftTrail = signal(true);
+  protected readonly draftSticks = signal(true);
   protected readonly draftFullTrail = signal(false);
   protected readonly draftTrailLengthSeconds = signal(60);
   protected readonly draftGpsSource = signal<MapGpsSource>(DEFAULT_GPS_SOURCE);
@@ -50,6 +52,7 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
       this.draftTargetPath.set(this.displayTargetPath());
       this.draftWind.set(this.displayWind());
       this.draftTrail.set(this.displayTrail());
+      this.draftSticks.set(this.displaySticks());
       this.draftFullTrail.set(this.displayFullTrail());
       this.draftTrailLengthSeconds.set(this.trailLengthSeconds());
       this.draftGpsSource.set(this.gpsSource());
@@ -62,6 +65,7 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
       displayTargetPath: this.draftTargetPath(),
       displayWind: this.draftWind(),
       displayTrail: this.draftTrail(),
+      displaySticks: this.draftSticks(),
       displayFullTrail: this.draftFullTrail(),
       trailLengthSeconds: Number(this.draftTrailLengthSeconds()),
       gpsSource: this.draftGpsSource(),
@@ -88,6 +92,10 @@ export class MapSettingsMenuComponent extends ModalContentBase<MapDisplaySetting
 
   protected onDisplayTrailChange(checked: boolean): void {
     this.draftTrail.set(checked);
+  }
+
+  protected onDisplaySticksChange(checked: boolean): void {
+    this.draftSticks.set(checked);
   }
 
   protected onDisplayFullTrailChange(checked: boolean): void {

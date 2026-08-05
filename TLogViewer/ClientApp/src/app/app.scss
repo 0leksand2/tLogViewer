@@ -86,8 +86,7 @@
     }
   }
 
-  &__player,
-  &__player-dock {
+  &__bottom {
     position: absolute;
     left: var(--player-left);
     right: var(--player-right);
@@ -102,21 +101,37 @@
     }
   }
 
-  &__player-dock {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  &__summary {
-    display: flex;
-    justify-content: flex-end;
-    padding: 0 0.75rem 0.5rem;
+  &__sticks {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    z-index: 1;
+    width: min(100% - 1.5rem, 17rem);
+    margin-bottom: 0.5rem;
+    transform: translateX(-50%);
     pointer-events: none;
 
     > * {
+      display: block;
+      width: 100%;
+      padding: 0.45rem 0.55rem 0.35rem;
+      border-radius: 8px;
+      background: rgb(255 255 255 / 18%);
+      box-shadow: 0 1px 4px rgb(0 0 0 / 18%);
       pointer-events: auto;
     }
+  }
+
+  &__player {
+    overflow: visible;
+  }
+
+  &__summary {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 100%;
+    z-index: 2;
+    margin-bottom: 0.5rem;
   }
 
   &__summary-btn {

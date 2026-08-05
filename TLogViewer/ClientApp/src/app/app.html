@@ -33,6 +33,7 @@
         [displayTargetPath]="displayTargetPath()"
         [displayWind]="displayWind()"
         [displayTrail]="displayTrail()"
+        [displaySticks]="displaySticks()"
         [displayFullTrail]="displayFullTrail()"
         [trailLengthSeconds]="trailLengthSeconds()"
         [gpsSource]="gpsSource()"
@@ -100,8 +101,14 @@
     </button>
   </div>
 
-  @if (loadedFlight(); as flight) {
-    <div class="app-shell__player-dock">
+  <div class="app-shell__bottom">
+    @if (displaySticks()) {
+      <div class="app-shell__sticks">
+        <app-stick-position />
+      </div>
+    }
+
+    @if (loadedFlight(); as flight) {
       <div class="app-shell__summary">
         <button
           type="button"
@@ -116,15 +123,8 @@
           }
         </button>
       </div>
-      <app-flight-player
-        [playbackPoints]="playbackPoints()"
-        [durationSeconds]="selectedFlightDuration()"
-        [(progressPercent)]="flightProgressPercent"
-        [(playing)]="flightPlaying"
-        [(playbackSpeed)]="flightPlaybackSpeed"
-      />
-    </div>
-  } @else {
+    }
+
     <div class="app-shell__player">
       <app-flight-player
         [playbackPoints]="playbackPoints()"
@@ -134,5 +134,5 @@
         [(playbackSpeed)]="flightPlaybackSpeed"
       />
     </div>
-  }
+  </div>
 </div>

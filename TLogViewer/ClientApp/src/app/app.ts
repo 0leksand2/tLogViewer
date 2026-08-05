@@ -25,6 +25,7 @@ import {
 import { SelectedTelemetryPropertiesStorage } from './mission-planner-properties/services/selected-telemetry-properties-storage.service';
 import { FlightPlayerModule } from './flight-player/flight-player.module';
 import { FlightSummaryReportComponent } from './flight-player/components/flight-summary-report';
+import { StickPositionComponent } from './side-menu/components/stick-position/stick-position';
 import {
   resolveActiveHomePoint,
   resolveFlightHomePoints,
@@ -61,6 +62,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
     ModalModule,
     FlightPlayerModule,
     FlightSummaryReportComponent,
+    StickPositionComponent,
     TranslatePipe,
   ],
   templateUrl: './app.html',
@@ -92,6 +94,7 @@ export class App {
   protected readonly displayTargetPath = this.mapDisplaySettings.displayTargetPath;
   protected readonly displayWind = this.mapDisplaySettings.displayWind;
   protected readonly displayTrail = this.mapDisplaySettings.displayTrail;
+  protected readonly displaySticks = this.mapDisplaySettings.displaySticks;
   protected readonly displayFullTrail = this.mapDisplaySettings.displayFullTrail;
   protected readonly trailLengthSeconds = this.mapDisplaySettings.trailLengthSeconds;
   protected readonly gpsSource = this.mapDisplaySettings.gpsSource;

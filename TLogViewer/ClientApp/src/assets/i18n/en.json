@@ -51,8 +51,10 @@
     "roll": "Roll",
     "pitch": "Pitch",
     "yaw": "Yaw",
+    "throttle": "Throttle",
     "vfrAria": "VFR HUD, roll {{roll}}, pitch {{pitch}}",
-    "compassAria": "Heading compass, yaw {{yaw}}"
+    "compassAria": "Heading compass, yaw {{yaw}}",
+    "sticksAria": "RC stick positions, left yaw and throttle, right roll and pitch"
   },
   "settings": {
     "language": {
@@ -66,6 +68,7 @@
     "displayTargetPath": "Display target path",
     "displayWind": "Display wind",
     "displayTrail": "Display trail",
+    "displaySticks": "Display stick positions",
     "fullFlightTrail": "Full flight trail",
     "fullTrailNote": "Showing the full flight trail may seriously affect performance on long logs.",
     "trailLength": "Trail length",

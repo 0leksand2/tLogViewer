@@ -17,6 +17,8 @@ export interface MapDisplaySettings {
   displayWind: boolean;
   /** Mode-colored trail behind the aircraft. */
   displayTrail: boolean;
+  /** RC stick position overlay above the timeline. */
+  displaySticks: boolean;
   /** Trail from flight start to current playback (can be slow). */
   displayFullTrail: boolean;
   /** Trail length in seconds of log time (ignored when full trail is on). */
@@ -42,6 +44,7 @@ const DEFAULTS: MapDisplaySettings = {
   displayTargetPath: true,
   displayWind: true,
   displayTrail: true,
+  displaySticks: true,
   displayFullTrail: false,
   trailLengthSeconds: 60,
   gpsSource: DEFAULT_GPS_SOURCE,
@@ -75,6 +78,7 @@ export class MapDisplaySettingsService {
   readonly displayTargetPath = signal(DEFAULTS.displayTargetPath);
   readonly displayWind = signal(DEFAULTS.displayWind);
   readonly displayTrail = signal(DEFAULTS.displayTrail);
+  readonly displaySticks = signal(DEFAULTS.displaySticks);
   readonly displayFullTrail = signal(DEFAULTS.displayFullTrail);
   readonly trailLengthSeconds = signal(DEFAULTS.trailLengthSeconds);
   readonly gpsSource = signal<MapGpsSource>(DEFAULTS.gpsSource);
@@ -103,6 +107,11 @@ export class MapDisplaySettingsService {
     this.persist();
   }
 
+  setDisplaySticks(value: boolean): void {
+    this.displaySticks.set(value);
+    this.persist();
+  }
+
   setDisplayFullTrail(value: boolean): void {
     this.displayFullTrail.set(value);
     this.persist();
@@ -124,6 +133,7 @@ export class MapDisplaySettingsService {
     this.displayTargetPath.set(!!settings.displayTargetPath);
     this.displayWind.set(!!settings.displayWind);
     this.displayTrail.set(!!settings.displayTrail);
+    this.displaySticks.set(!!settings.displaySticks);
     this.displayFullTrail.set(!!settings.displayFullTrail);
     this.trailLengthSeconds.set(snapTrailLength(Number(settings.trailLengthSeconds)));
     this.gpsSource.set(normalizeGpsSource(settings.gpsSource));
@@ -150,6 +160,9 @@ export class MapDisplaySettingsService {
       if (typeof parsed.displayTrail === 'boolean') {
         this.displayTrail.set(parsed.displayTrail);
       }
+      if (typeof parsed.displaySticks === 'boolean') {
+        this.displaySticks.set(parsed.displaySticks);
+      }
       if (typeof parsed.displayFullTrail === 'boolean') {
         this.displayFullTrail.set(parsed.displayFullTrail);
       }
@@ -173,6 +186,7 @@ export class MapDisplaySettingsService {
       displayTargetPath: this.displayTargetPath(),
       displayWind: this.displayWind(),
       displayTrail: this.displayTrail(),
+      displaySticks: this.displaySticks(),
       displayFullTrail: this.displayFullTrail(),
       trailLengthSeconds: this.trailLengthSeconds(),
       gpsSource: this.gpsSource(),

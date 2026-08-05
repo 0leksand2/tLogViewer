@@ -1,0 +1,45 @@
+<div class="stick-position" role="img" [attr.aria-label]="ariaLabel()">
+  <div class="stick-position__pair">
+    <div class="stick-position__stick">
+      <svg class="stick-position__svg" viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="stick-position__face" cx="100" cy="100" r="88" />
+        <line class="stick-position__cross" x1="100" y1="22" x2="100" y2="178" />
+        <line class="stick-position__cross" x1="22" y1="100" x2="178" y2="100" />
+        <circle class="stick-position__travel" cx="100" cy="100" [attr.r]="travel" />
+        <circle
+          class="stick-position__dot"
+          [attr.cx]="leftDot().x"
+          [attr.cy]="leftDot().y"
+          r="9"
+        />
+        <circle class="stick-position__bezel" cx="100" cy="100" r="88" />
+        <circle class="stick-position__bezel-outer" cx="100" cy="100" r="94" />
+      </svg>
+      <div class="stick-position__labels">
+        <span class="stick-position__label">{{ 'gauges.yaw' | translate }}</span>
+        <span class="stick-position__label">{{ 'gauges.throttle' | translate }}</span>
+      </div>
+    </div>
+
+    <div class="stick-position__stick">
+      <svg class="stick-position__svg" viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="stick-position__face" cx="100" cy="100" r="88" />
+        <line class="stick-position__cross" x1="100" y1="22" x2="100" y2="178" />
+        <line class="stick-position__cross" x1="22" y1="100" x2="178" y2="100" />
+        <circle class="stick-position__travel" cx="100" cy="100" [attr.r]="travel" />
+        <circle
+          class="stick-position__dot"
+          [attr.cx]="rightDot().x"
+          [attr.cy]="rightDot().y"
+          r="9"
+        />
+        <circle class="stick-position__bezel" cx="100" cy="100" r="88" />
+        <circle class="stick-position__bezel-outer" cx="100" cy="100" r="94" />
+      </svg>
+      <div class="stick-position__labels">
+        <span class="stick-position__label">{{ 'gauges.roll' | translate }}</span>
+        <span class="stick-position__label">{{ 'gauges.pitch' | translate }}</span>
+      </div>
+    </div>
+  </div>
+</div>

@@ -84,11 +84,21 @@ public static class HudAliasEnricher
 
     private static void WriteRcIn(Dictionary<string, object> atMs, RcChannelsData rc)
     {
-        var count = Math.Min(rc.Channels.Count, ChInKeys.Length);
+        // V1/V2 parsers store raw PWM (µs). Skip unused slots (UINT16_MAX / 0).
+        var available = Math.Min(rc.Channels.Count, ChInKeys.Length);
+        var count = rc.ChannelCount > 0
+            ? Math.Min(rc.ChannelCount, available)
+            : available;
+
         for (var i = 0; i < count; i++)
         {
-            // Stored as normalized stick; convert back to PWM-style for HUD.
-            atMs[ChInKeys[i]] = 1500.0 + rc.Channels[i] * 500.0;
+            var pwm = rc.Channels[i];
+            if (pwm <= 0 || pwm >= ushort.MaxValue)
+            {
+                continue;
+            }
+
+            atMs[ChInKeys[i]] = pwm;
         }
 
         atMs[FlightFieldIds.RxRssi] = rc.Rssi;
