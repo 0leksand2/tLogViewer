@@ -1,12 +1,13 @@
 using System.Collections.Concurrent;
 using tLogViewer.Core.Models;
-
 using tLogViewer.Services.Interfaces;
 
 namespace tLogViewer.Services.Services;
 
 public sealed class TlogSessionStore : ITlogSessionStore
 {
+    public static readonly TimeSpan DefaultTtl = TimeSpan.FromHours(1);
+
     private readonly ConcurrentDictionary<string, SessionEntry> _sessions = new(StringComparer.Ordinal);
 
     public string Store(string fileName, long size, TlogParseResult parseResult)
@@ -22,6 +23,7 @@ public sealed class TlogSessionStore : ITlogSessionStore
             DateTimeOffset.UtcNow,
             parseResult.TotalRecords,
             parseResult.ParsedCount,
+            parseResult.SystemId,
             flights,
             summaries);
 
@@ -48,6 +50,8 @@ public sealed class TlogSessionStore : ITlogSessionStore
     public bool TryTakeFlight(string sessionId, Guid flightId, out FlightDto? flight, out bool sessionReleased)
     {
         flight = null;
+        // Sessions stay until TTL so re-selecting a flight still works; analysis cache
+        // independently keeps the same log for re-upload within one hour.
         sessionReleased = false;
 
         if (!_sessions.TryGetValue(sessionId, out var entry))
@@ -62,19 +66,7 @@ public sealed class TlogSessionStore : ITlogSessionStore
         }
 
         flight = entry.Flights.FirstOrDefault(f => f.Id == flightId);
-        if (flight is null)
-        {
-            return false;
-        }
-
-        sessionReleased = entry.MarkDownloaded(flightId);
-
-        if (sessionReleased)
-        {
-            _sessions.TryRemove(sessionId, out _);
-        }
-
-        return true;
+        return flight is not null;
     }
 
     public int RemoveExpired(TimeSpan maxAge)
@@ -94,7 +86,7 @@ public sealed class TlogSessionStore : ITlogSessionStore
     }
 
     private static bool IsExpired(SessionEntry entry) =>
-        DateTimeOffset.UtcNow - entry.CreatedAtUtc >= TimeSpan.FromMinutes(30);
+        DateTimeOffset.UtcNow - entry.CreatedAtUtc >= DefaultTtl;
 
     private static FlightSummary ToSummary(FlightDto flight) => new()
     {
@@ -109,9 +101,6 @@ public sealed class TlogSessionStore : ITlogSessionStore
 
     private sealed class SessionEntry
     {
-        private readonly object _gate = new();
-        private readonly HashSet<Guid> _downloaded = new();
-
         public SessionEntry(
             string sessionId,
             string fileName,
@@ -119,6 +108,7 @@ public sealed class TlogSessionStore : ITlogSessionStore
             DateTimeOffset createdAtUtc,
             int totalRecords,
             int parsedCount,
+            byte systemId,
             IReadOnlyList<FlightDto> flights,
             IReadOnlyList<FlightSummary> summaries)
         {
@@ -128,6 +118,7 @@ public sealed class TlogSessionStore : ITlogSessionStore
             CreatedAtUtc = createdAtUtc;
             TotalRecords = totalRecords;
             ParsedCount = parsedCount;
+            SystemId = systemId;
             Flights = flights;
             Summaries = summaries;
         }
@@ -138,17 +129,9 @@ public sealed class TlogSessionStore : ITlogSessionStore
         public DateTimeOffset CreatedAtUtc { get; }
         public int TotalRecords { get; }
         public int ParsedCount { get; }
+        public byte SystemId { get; }
         public IReadOnlyList<FlightDto> Flights { get; }
         public IReadOnlyList<FlightSummary> Summaries { get; }
-
-        public bool MarkDownloaded(Guid flightId)
-        {
-            lock (_gate)
-            {
-                _downloaded.Add(flightId);
-                return _downloaded.Count >= Flights.Count;
-            }
-        }
 
         public TlogSessionSnapshot ToSnapshot() => new()
         {

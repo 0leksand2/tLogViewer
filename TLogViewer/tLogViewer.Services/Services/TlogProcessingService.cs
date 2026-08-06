@@ -1,7 +1,6 @@
 using tLogViewer.Core.Models;
 using tLogViewer.Core.Models.Messages;
 using tLogViewer.Reader.Services;
-
 using tLogViewer.Services.Interfaces;
 
 namespace tLogViewer.Services.Services;
@@ -39,11 +38,17 @@ public sealed class TlogProcessingService : ITlogProcessingService
             var messages = new List<MavMessageDto>();
             var derived = new DerivedMessageCalculator();
             var totalRecords = 0;
+            byte systemId = 0;
 
             foreach (var record in LogReader.ReadTLog(readable))
             {
                 totalRecords++;
                 derived.ObservePacket(record);
+
+                if (systemId == 0 && IsUsableVehicleSysId(record.MavPacket.SysId))
+                {
+                    systemId = record.MavPacket.SysId;
+                }
 
                 var parsed = MessageProcessingFactory.ParseMessage(record.MavPacket);
                 if (parsed is null)
@@ -67,6 +72,7 @@ public sealed class TlogProcessingService : ITlogProcessingService
             {
                 TotalRecords = totalRecords,
                 ParsedCount = messages.Count,
+                SystemId = systemId,
                 Flights = flights
             };
         }
@@ -75,4 +81,34 @@ public sealed class TlogProcessingService : ITlogProcessingService
             buffer?.Dispose();
         }
     }
+
+    public byte PeekSystemId(Stream stream)
+    {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("PeekSystemId requires a seekable stream.", nameof(stream));
+        }
+
+        var origin = stream.Position;
+        try
+        {
+            foreach (var record in LogReader.ReadTLog(stream))
+            {
+                if (IsUsableVehicleSysId(record.MavPacket.SysId))
+                {
+                    return record.MavPacket.SysId;
+                }
+            }
+
+            return 0;
+        }
+        finally
+        {
+            stream.Position = origin;
+        }
+    }
+
+    /// <summary>Skip unset / GCS / broadcast system ids.</summary>
+    internal static bool IsUsableVehicleSysId(byte sysId) =>
+        sysId is not 0 and not 253 and not 255;
 }

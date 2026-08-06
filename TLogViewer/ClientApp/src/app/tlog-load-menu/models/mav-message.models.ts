@@ -7,6 +7,12 @@ export interface TlogUploadResult {
   flightCount: number;
   /** Summaries only — fetch messages via getFlight(). */
   flights: FlightSummary[];
+  /** Vehicle MAVLink system id used for the analysis cache key. */
+  systemId: number;
+  /** True when flights were served from the 1-hour analysis cache. */
+  fromCache: boolean;
+  /** Unique cache identity derived from file name + system id + size. */
+  cacheKey: string;
 }
 
 export interface FlightSummary {

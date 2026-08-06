@@ -10,15 +10,21 @@ public class TlogController : ControllerBase
 {
     private readonly ITlogProcessingService _processingService;
     private readonly ITlogSessionStore _sessionStore;
+    private readonly IFlightAnalysisCache _analysisCache;
 
-    public TlogController(ITlogProcessingService processingService, ITlogSessionStore sessionStore)
+    public TlogController(
+        ITlogProcessingService processingService,
+        ITlogSessionStore sessionStore,
+        IFlightAnalysisCache analysisCache)
     {
         _processingService = processingService;
         _sessionStore = sessionStore;
+        _analysisCache = analysisCache;
     }
 
     /// <summary>
-    /// Parses the uploaded TLog in memory and returns flight summaries only.
+    /// Parses the uploaded TLog (or reuses a 1-hour analysis cache hit) and returns flight summaries.
+    /// Cache identity = file name + vehicle system id + size (+ split flag).
     /// Fetch each flight via GET sessions/{sessionId}/flights/{flightId}.
     /// </summary>
     [HttpPost("upload")]
@@ -40,10 +46,73 @@ public class TlogController : ControllerBase
         }
 
         TlogParseResult processResult;
+        var fromCache = false;
+        string cacheKey;
+
         try
         {
-            using var stream = file.OpenReadStream();
-            processResult = _processingService.Process(stream, splitIntoFlights);
+            using var uploadStream = file.OpenReadStream();
+            using var buffer = new MemoryStream();
+            uploadStream.CopyTo(buffer);
+            buffer.Position = 0;
+
+            var peekedSysId = _processingService.PeekSystemId(buffer);
+            buffer.Position = 0;
+
+            cacheKey = _analysisCache.BuildKey(
+                file.FileName,
+                peekedSysId,
+                file.Length,
+                splitIntoFlights);
+
+            if (_analysisCache.TryGet(cacheKey, out var cached) && cached is not null)
+            {
+                processResult = cached;
+                fromCache = true;
+            }
+            else
+            {
+                processResult = _processingService.Process(buffer, splitIntoFlights);
+
+                var resolvedSysId = processResult.SystemId != 0
+                    ? processResult.SystemId
+                    : peekedSysId;
+
+                if (resolvedSysId != peekedSysId)
+                {
+                    var resolvedKey = _analysisCache.BuildKey(
+                        file.FileName,
+                        resolvedSysId,
+                        file.Length,
+                        splitIntoFlights);
+
+                    if (_analysisCache.TryGet(resolvedKey, out cached) && cached is not null)
+                    {
+                        processResult = cached;
+                        fromCache = true;
+                        cacheKey = resolvedKey;
+                    }
+                    else
+                    {
+                        cacheKey = resolvedKey;
+                        if (processResult.SystemId == 0 && resolvedSysId != 0)
+                        {
+                            processResult = CloneWithSystemId(processResult, resolvedSysId);
+                        }
+
+                        _analysisCache.Set(cacheKey, processResult);
+                    }
+                }
+                else
+                {
+                    if (processResult.SystemId == 0 && peekedSysId != 0)
+                    {
+                        processResult = CloneWithSystemId(processResult, peekedSysId);
+                    }
+
+                    _analysisCache.Set(cacheKey, processResult);
+                }
+            }
         }
         catch (InvalidDataException ex)
         {
@@ -65,13 +134,15 @@ public class TlogController : ControllerBase
             TotalRecords = snapshot.TotalRecords,
             ParsedCount = snapshot.ParsedCount,
             FlightCount = snapshot.Flights.Count,
-            Flights = snapshot.Flights
+            Flights = snapshot.Flights,
+            SystemId = processResult.SystemId,
+            FromCache = fromCache,
+            CacheKey = cacheKey
         });
     }
 
     /// <summary>
-    /// Downloads one flight's messages. Session memory is released after all flights
-    /// are downloaded, or automatically after 30 minutes.
+    /// Downloads one flight's messages. Session and analysis cache entries expire after 1 hour.
     /// </summary>
     [HttpGet("sessions/{sessionId}/flights/{flightId:guid}")]
     public ActionResult<TlogFlightResponse> GetFlight(string sessionId, Guid flightId)
@@ -89,4 +160,13 @@ public class TlogController : ControllerBase
             SessionReleased = sessionReleased
         });
     }
+
+    private static TlogParseResult CloneWithSystemId(TlogParseResult source, byte systemId) =>
+        new()
+        {
+            TotalRecords = source.TotalRecords,
+            ParsedCount = source.ParsedCount,
+            SystemId = systemId,
+            Flights = source.Flights
+        };
 }

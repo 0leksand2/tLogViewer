@@ -8,6 +8,7 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<ILogAnalyticsService, LogAnalyticsService>();
 builder.Services.AddSingleton<ITlogProcessingService, TlogProcessingService>();
 builder.Services.AddSingleton<ITlogSessionStore, TlogSessionStore>();
+builder.Services.AddSingleton<IFlightAnalysisCache, FlightAnalysisCache>();
 builder.Services.AddHostedService<TLogViewer.Web.TlogSessionCleanupService>();
 builder.Services.Configure<FormOptions>(options =>
 {

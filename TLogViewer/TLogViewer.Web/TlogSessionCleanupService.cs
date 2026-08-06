@@ -1,21 +1,27 @@
 using tLogViewer.Services.Interfaces;
+using tLogViewer.Services.Services;
 
 namespace TLogViewer.Web;
 
 /// <summary>
-/// Evicts in-memory TLog sessions older than 30 minutes.
+/// Evicts in-memory TLog analysis cache and download sessions older than 1 hour.
 /// </summary>
 public sealed class TlogSessionCleanupService : BackgroundService
 {
-    private static readonly TimeSpan MaxAge = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan MaxAge = TimeSpan.FromHours(1);
     private static readonly TimeSpan Interval = TimeSpan.FromMinutes(1);
 
-    private readonly ITlogSessionStore _store;
+    private readonly ITlogSessionStore _sessionStore;
+    private readonly IFlightAnalysisCache _analysisCache;
     private readonly ILogger<TlogSessionCleanupService> _logger;
 
-    public TlogSessionCleanupService(ITlogSessionStore store, ILogger<TlogSessionCleanupService> logger)
+    public TlogSessionCleanupService(
+        ITlogSessionStore sessionStore,
+        IFlightAnalysisCache analysisCache,
+        ILogger<TlogSessionCleanupService> logger)
     {
-        _store = store;
+        _sessionStore = sessionStore;
+        _analysisCache = analysisCache;
         _logger = logger;
     }
 
@@ -25,15 +31,20 @@ public sealed class TlogSessionCleanupService : BackgroundService
         {
             try
             {
-                var removed = _store.RemoveExpired(MaxAge);
-                if (removed > 0)
+                var sessionsRemoved = _sessionStore.RemoveExpired(MaxAge);
+                var analysesRemoved = _analysisCache.RemoveExpired(MaxAge);
+
+                if (sessionsRemoved > 0 || analysesRemoved > 0)
                 {
-                    _logger.LogInformation("Removed {Count} expired TLog session(s) from memory.", removed);
+                    _logger.LogInformation(
+                        "Removed {Sessions} expired TLog session(s) and {Analyses} analysis cache entr(y/ies).",
+                        sessionsRemoved,
+                        analysesRemoved);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to purge expired TLog sessions.");
+                _logger.LogError(ex, "Failed to purge expired TLog sessions / analysis cache.");
             }
 
             await Task.Delay(Interval, stoppingToken);
