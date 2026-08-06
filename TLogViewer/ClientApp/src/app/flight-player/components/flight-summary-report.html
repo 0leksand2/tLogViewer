@@ -55,66 +55,220 @@
     </section>
 
     <section class="flight-summary__section">
-      <h3 class="flight-summary__heading">{{ 'summary.sticks' | translate }}</h3>
+      <h3 class="flight-summary__heading">{{ 'summary.spoof' | translate }}</h3>
       <p class="flight-summary__status">
-        {{ 'summary.sticksNote' | translate }}
+        {{ 'summary.spoofThreshold' | translate: { distance: '5 km' } }}
+      </p>
+      <p
+        class="flight-summary__status"
+        [class.flight-summary__ok]="!summary.spoofDetected"
+        [class.flight-summary__bad]="summary.spoofDetected"
+      >
+        {{ (summary.spoofDetected ? 'summary.spoofDetected' : 'summary.spoofNotDetected') | translate }}
+        @if (summary.spoofEvents.length > 0) {
+          <span class="flight-summary__muted">
+            {{
+              (summary.spoofEvents.length === 1 ? 'summary.events' : 'summary.events_plural')
+                | translate: { count: summary.spoofEvents.length }
+            }}
+          </span>
+        }
       </p>
 
-      @if (summary.stickChannels?.length) {
-        <dl class="flight-summary__grid">
-          @for (stick of summary.stickChannels; track stick.channel) {
-            <dt>
-              {{ stickChannelLabel(stick) }}
-              <span class="flight-summary__muted">{{ 'summary.stickCh' | translate: { n: stick.channel } }}</span>
-            </dt>
-            <dd>
-              @if (stick.sampleCount > 0) {
-                <span [class]="'flight-summary__stick flight-summary__stick--' + stickUsageTone(stick.usageHealth)">
-                  {{ stick.averageUsagePercent | number: '1.0-1' }}%
-                </span>
-                <span
-                  class="flight-summary__stick-label"
-                  [class]="'flight-summary__stick flight-summary__stick--' + stickUsageTone(stick.usageHealth)"
-                >
-                  {{ stickUsageHealthLabel(stick.usageHealth) }}
-                </span>
-                <span class="flight-summary__muted">
+      @if (summary.spoofEvents.length > 0) {
+        <ul class="flight-summary__events">
+          @for (event of summary.spoofEvents; track event.timestampMs) {
+            <li class="flight-summary__event">
+              <button
+                type="button"
+                class="flight-summary__event-btn"
+                (click)="onEventClick(event.timestampMs)"
+                [attr.title]="'summary.seekEventTitle' | translate"
+              >
+                <div class="flight-summary__event-time">
+                  {{ formatEventTime(event.timestampMs, event.timestampUtc) }}
+                </div>
+                <div class="flight-summary__event-dist">{{ formatDistanceKm(event.distanceM) }}</div>
+                <div class="flight-summary__event-coords">
+                  <span>
+                    {{
+                      'summary.from'
+                        | translate
+                          : {
+                              lat: formatCoord(event.fromLatitudeDeg),
+                              lon: formatCoord(event.fromLongitudeDeg),
+                            }
+                    }}
+                  </span>
+                  <span>
+                    {{
+                      'summary.to'
+                        | translate
+                          : {
+                              lat: formatCoord(event.toLatitudeDeg),
+                              lon: formatCoord(event.toLongitudeDeg),
+                            }
+                    }}
+                  </span>
+                </div>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="flight-summary__section">
+      <h3 class="flight-summary__heading">{{ 'summary.attitudeYaw' | translate }}</h3>
+
+      <p
+        class="flight-summary__status"
+        [class.flight-summary__warn]="summary.yawErrorGrowing"
+        [class.flight-summary__ok]="!summary.yawErrorGrowing"
+      >
+        @if (summary.yawErrorGrowing) {
+          {{ 'summary.yawGrowing' | translate }}
+        } @else {
+          {{ 'summary.yawNotGrowing' | translate }}
+        }
+        @if (summary.yawErrorAverageDeg != null) {
+          <span class="flight-summary__muted">
+            {{
+              'summary.avgDeg'
+                | translate: { value: (summary.yawErrorAverageDeg | number: '1.1-1') }
+            }}
+          </span>
+        }
+      </p>
+
+      <p
+        class="flight-summary__status"
+        [class]="'flight-summary__hdop flight-summary__hdop--' + yawCogTone(summary.yawCogHealth)"
+      >
+        {{ yawCogHealthLabel(summary.yawCogHealth) }}
+        @if (summary.yawCogDiffAverageDeg != null) {
+          <span class="flight-summary__muted">
+            {{
+              'summary.yawCogSamples'
+                | translate
+                  : {
+                      avg: (summary.yawCogDiffAverageDeg | number: '1.1-1'),
+                      count: summary.yawCogSampleCount,
+                    }
+            }}
+          </span>
+        }
+      </p>
+
+      <ul class="flight-summary__legend">
+        <li>
+          <span class="flight-summary__swatch flight-summary__swatch--healthy"></span>
+          {{ 'summary.yawLegendGood' | translate }}
+        </li>
+        <li>
+          <span class="flight-summary__swatch flight-summary__swatch--warn"></span>
+          {{ 'summary.yawLegendOk' | translate }}
+        </li>
+        <li>
+          <span class="flight-summary__swatch flight-summary__swatch--bad"></span>
+          {{ 'summary.yawLegendBad' | translate }}
+        </li>
+      </ul>
+    </section>
+
+    <section class="flight-summary__section">
+      <h3 class="flight-summary__heading">{{ 'summary.magnetometer' | translate }}</h3>
+      <p class="flight-summary__status">
+        {{ 'summary.magThreshold' | translate }}
+      </p>
+
+      <p
+        class="flight-summary__status"
+        [class.flight-summary__ok]="!summary.strongMagneticRadiationDetected"
+        [class.flight-summary__bad]="summary.strongMagneticRadiationDetected"
+      >
+        @if (summary.strongMagneticRadiationDetected) {
+          {{ 'summary.magRadiation' | translate }}
+          <span class="flight-summary__muted">
+            {{
+              (summary.magRadiationEvents.length === 1 ? 'summary.events' : 'summary.events_plural')
+                | translate: { count: summary.magRadiationEvents.length }
+            }}
+          </span>
+        } @else {
+          {{ 'summary.magNoRadiation' | translate }}
+        }
+      </p>
+
+      @if (summary.magRadiationEvents.length > 0) {
+        <ul class="flight-summary__events">
+          @for (event of summary.magRadiationEvents; track event.timestampMs + event.fieldName) {
+            <li class="flight-summary__event">
+              <button
+                type="button"
+                class="flight-summary__event-btn"
+                (click)="onEventClick(event.timestampMs)"
+                [attr.title]="'summary.seekEventTitle' | translate"
+              >
+                <div class="flight-summary__event-time">
+                  {{ formatEventTime(event.timestampMs, event.timestampUtc) }}
+                </div>
+                <div class="flight-summary__event-dist">
                   {{
-                    'summary.stickUsageDetail'
+                    'summary.magJump'
                       | translate
                         : {
-                            peak: (stick.usagePercent | number: '1.0-1'),
-                            min: (stick.pwmMin | number: '1.0-0'),
-                            max: (stick.pwmMax | number: '1.0-0'),
-                            count: stick.sampleCount,
+                            field: event.fieldName,
+                            points: (event.jumpPoints | number: '1.0-1'),
                           }
                   }}
-                </span>
-              } @else {
-                {{ 'common.emDash' | translate }}
-                <span class="flight-summary__muted">{{ 'summary.stickNoData' | translate }}</span>
-              }
-            </dd>
+                </div>
+                <div class="flight-summary__event-coords">
+                  @if (event.latitudeDeg != null && event.longitudeDeg != null) {
+                    <span>
+                      {{
+                        'summary.at'
+                          | translate
+                            : {
+                                lat: formatCoord(event.latitudeDeg),
+                                lon: formatCoord(event.longitudeDeg),
+                              }
+                      }}
+                    </span>
+                  } @else {
+                    <span>{{ 'summary.coordsUnavailable' | translate }}</span>
+                  }
+                </div>
+              </button>
+            </li>
           }
-        </dl>
-
-        <ul class="flight-summary__legend">
-          <li>
-            <span class="flight-summary__swatch flight-summary__swatch--healthy"></span>
-            {{ 'summary.stickLegendGood' | translate }}
-          </li>
-          <li>
-            <span class="flight-summary__swatch flight-summary__swatch--warn"></span>
-            {{ 'summary.stickLegendImprove' | translate }}
-          </li>
-          <li>
-            <span class="flight-summary__swatch flight-summary__swatch--bad"></span>
-            {{ 'summary.stickLegendUncontrolled' | translate }}
-          </li>
         </ul>
-      } @else {
-        <p class="flight-summary__status">{{ 'summary.stickNoData' | translate }}</p>
       }
+
+      <p
+        class="flight-summary__status"
+        [class.flight-summary__warn]="summary.moveMagnetometerAwayFromMotor"
+        [class.flight-summary__ok]="!summary.moveMagnetometerAwayFromMotor"
+      >
+        @if (summary.moveMagnetometerAwayFromMotor) {
+          {{ 'summary.moveMag' | translate }}
+          @if (summary.magThrottleCorrelation != null) {
+            <span class="flight-summary__muted">
+              {{
+                'summary.magThrottleCorr'
+                  | translate: { r: (summary.magThrottleCorrelation | number: '1.2-2') }
+              }}
+            </span>
+          }
+        } @else {
+          {{ 'summary.noMagThrottle' | translate }}
+          @if (summary.magThrottleCorrelation != null) {
+            <span class="flight-summary__muted">
+              {{ 'summary.corrR' | translate: { r: (summary.magThrottleCorrelation | number: '1.2-2') } }}
+            </span>
+          }
+        }
+      </p>
     </section>
 
     <section class="flight-summary__section">
@@ -270,220 +424,66 @@
     </section>
 
     <section class="flight-summary__section">
-      <h3 class="flight-summary__heading">{{ 'summary.spoof' | translate }}</h3>
+      <h3 class="flight-summary__heading">{{ 'summary.sticks' | translate }}</h3>
       <p class="flight-summary__status">
-        {{ 'summary.spoofThreshold' | translate: { distance: '5 km' } }}
-      </p>
-      <p
-        class="flight-summary__status"
-        [class.flight-summary__ok]="!summary.spoofDetected"
-        [class.flight-summary__bad]="summary.spoofDetected"
-      >
-        {{ (summary.spoofDetected ? 'summary.spoofDetected' : 'summary.spoofNotDetected') | translate }}
-        @if (summary.spoofEvents.length > 0) {
-          <span class="flight-summary__muted">
-            {{
-              (summary.spoofEvents.length === 1 ? 'summary.events' : 'summary.events_plural')
-                | translate: { count: summary.spoofEvents.length }
-            }}
-          </span>
-        }
+        {{ 'summary.sticksNote' | translate }}
       </p>
 
-      @if (summary.spoofEvents.length > 0) {
-        <ul class="flight-summary__events">
-          @for (event of summary.spoofEvents; track event.timestampMs) {
-            <li class="flight-summary__event">
-              <button
-                type="button"
-                class="flight-summary__event-btn"
-                (click)="onEventClick(event.timestampMs)"
-                [attr.title]="'summary.seekEventTitle' | translate"
-              >
-                <div class="flight-summary__event-time">
-                  {{ formatEventTime(event.timestampMs, event.timestampUtc) }}
-                </div>
-                <div class="flight-summary__event-dist">{{ formatDistanceKm(event.distanceM) }}</div>
-                <div class="flight-summary__event-coords">
-                  <span>
-                    {{
-                      'summary.from'
-                        | translate
-                          : {
-                              lat: formatCoord(event.fromLatitudeDeg),
-                              lon: formatCoord(event.fromLongitudeDeg),
-                            }
-                    }}
-                  </span>
-                  <span>
-                    {{
-                      'summary.to'
-                        | translate
-                          : {
-                              lat: formatCoord(event.toLatitudeDeg),
-                              lon: formatCoord(event.toLongitudeDeg),
-                            }
-                    }}
-                  </span>
-                </div>
-              </button>
-            </li>
-          }
-        </ul>
-      }
-    </section>
-
-    <section class="flight-summary__section">
-      <h3 class="flight-summary__heading">{{ 'summary.magnetometer' | translate }}</h3>
-      <p class="flight-summary__status">
-        {{ 'summary.magThreshold' | translate }}
-      </p>
-
-      <p
-        class="flight-summary__status"
-        [class.flight-summary__ok]="!summary.strongMagneticRadiationDetected"
-        [class.flight-summary__bad]="summary.strongMagneticRadiationDetected"
-      >
-        @if (summary.strongMagneticRadiationDetected) {
-          {{ 'summary.magRadiation' | translate }}
-          <span class="flight-summary__muted">
-            {{
-              (summary.magRadiationEvents.length === 1 ? 'summary.events' : 'summary.events_plural')
-                | translate: { count: summary.magRadiationEvents.length }
-            }}
-          </span>
-        } @else {
-          {{ 'summary.magNoRadiation' | translate }}
-        }
-      </p>
-
-      @if (summary.magRadiationEvents.length > 0) {
-        <ul class="flight-summary__events">
-          @for (event of summary.magRadiationEvents; track event.timestampMs + event.fieldName) {
-            <li class="flight-summary__event">
-              <button
-                type="button"
-                class="flight-summary__event-btn"
-                (click)="onEventClick(event.timestampMs)"
-                [attr.title]="'summary.seekEventTitle' | translate"
-              >
-                <div class="flight-summary__event-time">
-                  {{ formatEventTime(event.timestampMs, event.timestampUtc) }}
-                </div>
-                <div class="flight-summary__event-dist">
+      @if (summary.stickChannels?.length) {
+        <dl class="flight-summary__grid">
+          @for (stick of summary.stickChannels; track stick.channel) {
+            <dt>
+              {{ stickChannelLabel(stick) }}
+              <span class="flight-summary__muted">{{ 'summary.stickCh' | translate: { n: stick.channel } }}</span>
+            </dt>
+            <dd>
+              @if (stick.sampleCount > 0) {
+                <span [class]="'flight-summary__stick flight-summary__stick--' + stickUsageTone(stick.usageHealth)">
+                  {{ stick.averageUsagePercent | number: '1.0-1' }}%
+                </span>
+                <span
+                  class="flight-summary__stick-label"
+                  [class]="'flight-summary__stick flight-summary__stick--' + stickUsageTone(stick.usageHealth)"
+                >
+                  {{ stickUsageHealthLabel(stick.usageHealth) }}
+                </span>
+                <span class="flight-summary__muted">
                   {{
-                    'summary.magJump'
+                    'summary.stickUsageDetail'
                       | translate
                         : {
-                            field: event.fieldName,
-                            points: (event.jumpPoints | number: '1.0-1'),
+                            peak: (stick.usagePercent | number: '1.0-1'),
+                            min: (stick.pwmMin | number: '1.0-0'),
+                            max: (stick.pwmMax | number: '1.0-0'),
+                            count: stick.sampleCount,
                           }
                   }}
-                </div>
-                <div class="flight-summary__event-coords">
-                  @if (event.latitudeDeg != null && event.longitudeDeg != null) {
-                    <span>
-                      {{
-                        'summary.at'
-                          | translate
-                            : {
-                                lat: formatCoord(event.latitudeDeg),
-                                lon: formatCoord(event.longitudeDeg),
-                              }
-                      }}
-                    </span>
-                  } @else {
-                    <span>{{ 'summary.coordsUnavailable' | translate }}</span>
-                  }
-                </div>
-              </button>
-            </li>
+                </span>
+              } @else {
+                {{ 'common.emDash' | translate }}
+                <span class="flight-summary__muted">{{ 'summary.stickNoData' | translate }}</span>
+              }
+            </dd>
           }
+        </dl>
+
+        <ul class="flight-summary__legend">
+          <li>
+            <span class="flight-summary__swatch flight-summary__swatch--healthy"></span>
+            {{ 'summary.stickLegendGood' | translate }}
+          </li>
+          <li>
+            <span class="flight-summary__swatch flight-summary__swatch--warn"></span>
+            {{ 'summary.stickLegendImprove' | translate }}
+          </li>
+          <li>
+            <span class="flight-summary__swatch flight-summary__swatch--bad"></span>
+            {{ 'summary.stickLegendUncontrolled' | translate }}
+          </li>
         </ul>
+      } @else {
+        <p class="flight-summary__status">{{ 'summary.stickNoData' | translate }}</p>
       }
-
-      <p
-        class="flight-summary__status"
-        [class.flight-summary__warn]="summary.moveMagnetometerAwayFromMotor"
-        [class.flight-summary__ok]="!summary.moveMagnetometerAwayFromMotor"
-      >
-        @if (summary.moveMagnetometerAwayFromMotor) {
-          {{ 'summary.moveMag' | translate }}
-          @if (summary.magThrottleCorrelation != null) {
-            <span class="flight-summary__muted">
-              {{
-                'summary.magThrottleCorr'
-                  | translate: { r: (summary.magThrottleCorrelation | number: '1.2-2') }
-              }}
-            </span>
-          }
-        } @else {
-          {{ 'summary.noMagThrottle' | translate }}
-          @if (summary.magThrottleCorrelation != null) {
-            <span class="flight-summary__muted">
-              {{ 'summary.corrR' | translate: { r: (summary.magThrottleCorrelation | number: '1.2-2') } }}
-            </span>
-          }
-        }
-      </p>
-    </section>
-
-    <section class="flight-summary__section">
-      <h3 class="flight-summary__heading">{{ 'summary.attitudeYaw' | translate }}</h3>
-
-      <p
-        class="flight-summary__status"
-        [class.flight-summary__warn]="summary.yawErrorGrowing"
-        [class.flight-summary__ok]="!summary.yawErrorGrowing"
-      >
-        @if (summary.yawErrorGrowing) {
-          {{ 'summary.yawGrowing' | translate }}
-        } @else {
-          {{ 'summary.yawNotGrowing' | translate }}
-        }
-        @if (summary.yawErrorAverageDeg != null) {
-          <span class="flight-summary__muted">
-            {{
-              'summary.avgDeg'
-                | translate: { value: (summary.yawErrorAverageDeg | number: '1.1-1') }
-            }}
-          </span>
-        }
-      </p>
-
-      <p
-        class="flight-summary__status"
-        [class]="'flight-summary__hdop flight-summary__hdop--' + yawCogTone(summary.yawCogHealth)"
-      >
-        {{ yawCogHealthLabel(summary.yawCogHealth) }}
-        @if (summary.yawCogDiffAverageDeg != null) {
-          <span class="flight-summary__muted">
-            {{
-              'summary.yawCogSamples'
-                | translate
-                  : {
-                      avg: (summary.yawCogDiffAverageDeg | number: '1.1-1'),
-                      count: summary.yawCogSampleCount,
-                    }
-            }}
-          </span>
-        }
-      </p>
-
-      <ul class="flight-summary__legend">
-        <li>
-          <span class="flight-summary__swatch flight-summary__swatch--healthy"></span>
-          {{ 'summary.yawLegendGood' | translate }}
-        </li>
-        <li>
-          <span class="flight-summary__swatch flight-summary__swatch--warn"></span>
-          {{ 'summary.yawLegendOk' | translate }}
-        </li>
-        <li>
-          <span class="flight-summary__swatch flight-summary__swatch--bad"></span>
-          {{ 'summary.yawLegendBad' | translate }}
-        </li>
-      </ul>
     </section>
   } @else {
     <p class="flight-summary__empty">{{ 'summary.empty' | translate }}</p>
