@@ -37,6 +37,7 @@ import {
   sortedPlaybackPoints,
   ensureDerivedPlaybackValues,
   progressPercentForMs,
+  targetMsFromProgress,
 } from './flight-player/utils/playback-timeline';
 import {
   MapDisplaySettings,
@@ -213,22 +214,22 @@ export class App {
 
     effect(() => {
       const flight = this.loadedFlight();
-      const playbackMs = resolvePlaybackPoint(
-        this.playbackPoints(),
-        this.flightProgressPercent(),
-      );
+      const progressPercent = this.flightProgressPercent();
+      const points = this.playbackPoints();
+      const playbackMs = resolvePlaybackPoint(points, progressPercent);
+      const displayMs = targetMsFromProgress(points, progressPercent);
       // Track trail settings even when the plane is absent so length/full-trail
       // changes always rebuild the trail on the next pose update.
       const showTrail = this.mapDisplaySettings.displayTrail();
       const fullTrail = this.mapDisplaySettings.displayFullTrail();
       const trailLengthSeconds = this.mapDisplaySettings.trailLengthSeconds();
       const gpsSource = this.mapDisplaySettings.gpsSource();
-      const points = this.playbackPoints();
       const map = this.map();
 
       const planeKey = [
         flight?.id ?? '',
         playbackMs,
+        displayMs !== null ? Math.round(displayMs) : '',
         showTrail,
         fullTrail,
         trailLengthSeconds,
@@ -244,7 +245,13 @@ export class App {
       }
       this.lastPlaneDriveKey = planeKey;
 
-      const plane = resolvePlanePosition(flight?.messages, playbackMs, gpsSource, points);
+      const plane = resolvePlanePosition(
+        flight?.messages,
+        playbackMs,
+        gpsSource,
+        points,
+        displayMs,
+      );
       const target = resolvePositionTarget(flight?.messages, playbackMs);
       const homePoints = resolveFlightHomePoints(flight?.homePoints, flight?.messages);
       const home = resolveActiveHomePoint(homePoints, playbackMs);

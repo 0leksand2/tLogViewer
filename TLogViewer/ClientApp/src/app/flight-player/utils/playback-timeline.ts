@@ -19,11 +19,8 @@ export function sortedPlaybackPoints(
     .sort((a, b) => a - b);
 }
 
-/**
- * Maps 0–100% progress onto the timeline spanned by playback points,
- * returning the latest point at or before that instant.
- */
-export function resolvePlaybackPoint(points: number[], progressPercent: number): number | null {
+/** Continuous log timestamp (Unix ms) for a 0–100% progress value. */
+export function targetMsFromProgress(points: number[], progressPercent: number): number | null {
   if (points.length === 0) {
     return null;
   }
@@ -35,7 +32,22 @@ export function resolvePlaybackPoint(points: number[], progressPercent: number):
   const clamped = Math.min(100, Math.max(0, progressPercent));
   const first = points[0]!;
   const last = points[points.length - 1]!;
-  const targetMs = first + (last - first) * (clamped / 100);
+  return first + (last - first) * (clamped / 100);
+}
+
+/**
+ * Maps 0–100% progress onto the timeline spanned by playback points,
+ * returning the latest point at or before that instant.
+ */
+export function resolvePlaybackPoint(points: number[], progressPercent: number): number | null {
+  const targetMs = targetMsFromProgress(points, progressPercent);
+  if (targetMs === null) {
+    return null;
+  }
+
+  if (points.length === 1) {
+    return points[0]!;
+  }
 
   let lo = 0;
   let hi = points.length - 1;
@@ -344,6 +356,7 @@ export function resolvePlanePosition(
   playbackMs: number | null,
   gpsSource: MapGpsSource = DEFAULT_GPS_SOURCE,
   playbackPoints?: readonly number[],
+  displayMs?: number | null,
 ): {
   lat: number;
   lon: number;
@@ -375,7 +388,8 @@ export function resolvePlanePosition(
     asFiniteNumber(fields[FlightFieldIds.WindSpeed]);
 
   const points = playbackPoints ?? sortedPlaybackPoints(messages);
-  const pos = resolveLatLonFromGpsSource(messages, points, playbackMs, gpsSource);
+  const posMs = displayMs ?? playbackMs;
+  const pos = resolveLatLonFromGpsSource(messages, points, posMs, gpsSource);
   if (!pos) {
     return null;
   }
@@ -383,19 +397,14 @@ export function resolvePlanePosition(
   return { lat: pos.lat, lon: pos.lon, yaw, navBearing, windDir, windSpeed };
 }
 
-function resolveLatLonFromGpsSource(
+function readLatLonAtOrBefore(
   messages: Record<string, Record<string, unknown>>,
   points: readonly number[],
-  targetMs: number,
-  gpsSource: MapGpsSource,
+  index: number,
+  latKey: string,
+  lonKey: string,
 ): { lat: number; lon: number } | null {
-  const { lat: latKey, lon: lonKey } = gpsSourceLatLonKeys(gpsSource);
-  const start = findPointIndexAtOrBefore(points, targetMs);
-  if (start < 0) {
-    return null;
-  }
-
-  for (let i = start; i >= 0; i--) {
+  for (let i = index; i >= 0; i--) {
     const fields = messages[String(points[i])];
     if (!fields) {
       continue;
@@ -415,6 +424,46 @@ function resolveLatLonFromGpsSource(
   }
 
   return null;
+}
+
+function resolveLatLonFromGpsSource(
+  messages: Record<string, Record<string, unknown>>,
+  points: readonly number[],
+  targetMs: number,
+  gpsSource: MapGpsSource,
+): { lat: number; lon: number } | null {
+  const { lat: latKey, lon: lonKey } = gpsSourceLatLonKeys(gpsSource);
+  const start = findPointIndexAtOrBefore(points, targetMs);
+  if (start < 0) {
+    return null;
+  }
+
+  const startPos = readLatLonAtOrBefore(messages, points, start, latKey, lonKey);
+  if (!startPos) {
+    return null;
+  }
+
+  if (start >= points.length - 1) {
+    return startPos;
+  }
+
+  const end = start + 1;
+  const endMs = points[end]!;
+  const startMs = points[start]!;
+  if (endMs <= startMs || targetMs >= endMs) {
+    return startPos;
+  }
+
+  const endPos = readLatLonAtOrBefore(messages, points, end, latKey, lonKey);
+  if (!endPos) {
+    return startPos;
+  }
+
+  const t = (targetMs - startMs) / (endMs - startMs);
+  return {
+    lat: startPos.lat + (endPos.lat - startPos.lat) * t,
+    lon: startPos.lon + (endPos.lon - startPos.lon) * t,
+  };
 }
 
 function findPointIndexAtOrBefore(points: readonly number[], targetMs: number): number {

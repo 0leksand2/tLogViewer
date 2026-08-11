@@ -48,9 +48,21 @@ export class StickPositionComponent {
     };
   });
 
+  protected readonly yawLabel = computed(() => formatPwm(this.currentValue.values()[CH_YAW]));
+  protected readonly throttleLabel = computed(() =>
+    formatPwm(this.currentValue.values()[CH_THROTTLE]),
+  );
+  protected readonly rollLabel = computed(() => formatPwm(this.currentValue.values()[CH_ROLL]));
+  protected readonly pitchLabel = computed(() => formatPwm(this.currentValue.values()[CH_PITCH]));
+
   protected readonly ariaLabel = computed(() => {
     this.language.lang();
-    return this.translate.instant('gauges.sticksAria');
+    return this.translate.instant('gauges.sticksAria', {
+      yaw: this.yawLabel(),
+      throttle: this.throttleLabel(),
+      roll: this.rollLabel(),
+      pitch: this.pitchLabel(),
+    });
   });
 }
 
@@ -79,4 +91,12 @@ function readNumber(value: unknown): number | null {
     }
   }
   return null;
+}
+
+function formatPwm(value: unknown): string {
+  const pwm = readNumber(value);
+  if (pwm === null || pwm < 800 || pwm > 2200) {
+    return '—';
+  }
+  return String(Math.round(pwm));
 }

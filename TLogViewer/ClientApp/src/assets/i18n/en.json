@@ -54,7 +54,7 @@
     "throttle": "Throttle",
     "vfrAria": "VFR HUD, roll {{roll}}, pitch {{pitch}}",
     "compassAria": "Heading compass, yaw {{yaw}}",
-    "sticksAria": "RC stick positions, left yaw and throttle, right roll and pitch"
+    "sticksAria": "RC stick positions, yaw {{yaw}}, throttle {{throttle}}, roll {{roll}}, pitch {{pitch}}"
   },
   "settings": {
     "language": {

@@ -16,8 +16,14 @@
         <circle class="stick-position__bezel-outer" cx="100" cy="100" r="94" />
       </svg>
       <div class="stick-position__labels">
-        <span class="stick-position__label">{{ 'gauges.yaw' | translate }}</span>
-        <span class="stick-position__label">{{ 'gauges.throttle' | translate }}</span>
+        <span class="stick-position__readout">
+          <span class="stick-position__label">{{ 'gauges.yaw' | translate }}</span>
+          <span class="stick-position__value">{{ yawLabel() }}</span>
+        </span>
+        <span class="stick-position__readout">
+          <span class="stick-position__label">{{ 'gauges.throttle' | translate }}</span>
+          <span class="stick-position__value">{{ throttleLabel() }}</span>
+        </span>
       </div>
     </div>
 
@@ -37,8 +43,14 @@
         <circle class="stick-position__bezel-outer" cx="100" cy="100" r="94" />
       </svg>
       <div class="stick-position__labels">
-        <span class="stick-position__label">{{ 'gauges.roll' | translate }}</span>
-        <span class="stick-position__label">{{ 'gauges.pitch' | translate }}</span>
+        <span class="stick-position__readout">
+          <span class="stick-position__label">{{ 'gauges.roll' | translate }}</span>
+          <span class="stick-position__value">{{ rollLabel() }}</span>
+        </span>
+        <span class="stick-position__readout">
+          <span class="stick-position__label">{{ 'gauges.pitch' | translate }}</span>
+          <span class="stick-position__value">{{ pitchLabel() }}</span>
+        </span>
       </div>
     </div>
   </div>

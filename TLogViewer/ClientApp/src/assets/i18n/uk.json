@@ -54,7 +54,7 @@
     "throttle": "Газ",
     "vfrAria": "VFR HUD, крен {{roll}}, тангаж {{pitch}}",
     "compassAria": "Компас курсу, рискання {{yaw}}",
-    "sticksAria": "Положення стіків RC, зліва рискання і газ, справа крен і тангаж"
+    "sticksAria": "Положення стіків RC, рискання {{yaw}}, газ {{throttle}}, крен {{roll}}, тангаж {{pitch}}"
   },
   "settings": {
     "language": {
